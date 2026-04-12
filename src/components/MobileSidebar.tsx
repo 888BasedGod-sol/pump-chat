@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenImage from "@/components/TokenImage";
+import Link from "next/link";
 
 export default function MobileSidebar() {
   const { communities, selectedCommunity, selectCommunity, raids, addCommunity, joinedCommunities } = useCommunity();
@@ -56,13 +57,10 @@ export default function MobileSidebar() {
         <div className="flex-1 overflow-y-auto p-3">
           <div className="space-y-0.5">
             {communities.map((c) => (
-              <button
+              <Link
                 key={c.ticker}
-                onClick={() => {
-                  selectCommunity(c.ticker);
-                  setOpen(false);
-                  setTimeout(() => document.getElementById("community-chat")?.scrollIntoView({ behavior: "smooth" }), 200);
-                }}
+                href={`/app/community/${c.ticker}`}
+                onClick={() => setOpen(false)}
                 className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
                   selectedCommunity === c.ticker
                     ? "bg-accent/10 border border-accent/30"
@@ -78,7 +76,7 @@ export default function MobileSidebar() {
                   </p>
                 </div>
                 {c.active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />}
-              </button>
+              </Link>
             ))}
 
             {communities.length === 0 && (

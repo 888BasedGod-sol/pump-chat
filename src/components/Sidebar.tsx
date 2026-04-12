@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenImage from "@/components/TokenImage";
+import Link from "next/link";
 
 export default function Sidebar() {
   const { communities, selectedCommunity, selectCommunity, raids, addCommunity, searchQuery, setSearchQuery, joinedCommunities } = useCommunity();
@@ -31,12 +32,9 @@ export default function Sidebar() {
         </p>
         <div className="space-y-0.5">
           {filteredCommunities.map((c) => (
-            <button
+            <Link
               key={c.ticker}
-              onClick={() => {
-                selectCommunity(c.ticker);
-                document.getElementById("community-chat")?.scrollIntoView({ behavior: "smooth" });
-              }}
+              href={`/app/community/${c.ticker}`}
               className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
                 selectedCommunity === c.ticker
                   ? "bg-accent/10 border border-accent/30"
@@ -56,7 +54,7 @@ export default function Sidebar() {
               {c.active && (
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
               )}
-            </button>
+            </Link>
           ))}
 
           {communities.length === 0 && (
