@@ -46,7 +46,7 @@ function timeAgo(ts: number | null | undefined): string {
 }
 
 export default function CommunitiesPage() {
-  const { communities, messages, raids, communityLeaders, searchQuery, isLoading } = useCommunity();
+  const { communities, messages, raids, communityLeaders, searchQuery, isLoading, joinedCommunities } = useCommunity();
 
   // Build stats per community
   const communityStats = useMemo(() => {
@@ -104,93 +104,102 @@ export default function CommunitiesPage() {
     <Link
       key={c.ticker}
       href={`/app/community/${c.ticker}`}
-      className="group flex gap-3 rounded-xl border border-border bg-surface p-3 transition-all hover:border-accent/40 hover:bg-surface-hover"
+      className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/40 hover:bg-surface-hover"
     >
-      {/* Left: token image */}
-      {c.image ? (
-        <img
-          src={c.image}
-          alt={c.name}
-          className="h-12 w-12 shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-sm font-bold text-accent">
-          {c.ticker.slice(0, 2)}
-        </div>
-      )}
-
-      {/* Right: info */}
-      <div className="min-w-0 flex-1">
-        {/* Row 1: name + status badge */}
-        <div className="flex items-center justify-between gap-1.5">
-          <p className="truncate text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
-            {c.name}
-          </p>
-          {c.complete !== undefined && (
-            <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-bold leading-none ${
-              c.complete
-                ? "bg-accent/15 text-accent"
-                : "bg-yellow-500/15 text-yellow-400"
-            }`}>
-              {c.complete ? "GRADUATED" : "BONDING"}
-            </span>
-          )}
-        </div>
-
-        {/* Row 2: ticker + rank + time */}
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[10px] text-text-muted font-mono">${c.ticker}</span>
-          {c.rank <= 3 && (
-            <span className={`rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
-              c.rank === 1 ? "bg-yellow-500/15 text-yellow-400" :
-              c.rank === 2 ? "bg-gray-400/15 text-gray-300" :
-              "bg-orange-500/15 text-orange-400"
-            }`}>
-              #{c.rank}
-            </span>
-          )}
-          {c.tokenCreatedAt ? (
-            <span className="text-[9px] text-text-muted ml-auto">{timeAgo(c.tokenCreatedAt)}</span>
-          ) : null}
-        </div>
-
-        {/* Row 3: market cap + 24h change */}
-        <div className="mt-1.5 flex items-baseline gap-2">
-          <span className="text-sm font-bold text-text-primary">
-            {c.fdv ? fmtUsd(c.fdv) : c.marketCapSol ? fmtSol(c.marketCapSol) : "—"}
-          </span>
-          {c.priceChange24h != null && (
-            <span className={`text-[10px] font-bold ${c.priceChange24h >= 0 ? "text-accent" : "text-red-400"}`}>
-              {fmtPct(c.priceChange24h)}
-            </span>
-          )}
-        </div>
-
-        {/* Row 4: key stats inline */}
-        <div className="mt-1 flex items-center gap-2 text-[9px] text-text-muted">
-          {c.holders != null && c.holders > 0 && (
-            <span>{fmtCompact(c.holders)} holders</span>
-          )}
-          {c.volume24h != null && c.volume24h > 0 && (
-            <span>{fmtUsd(c.volume24h)} vol</span>
-          )}
-          {c.liquidity != null && c.liquidity > 0 && (
-            <span>{fmtUsd(c.liquidity)} liq</span>
-          )}
-        </div>
-
-        {/* Bonding curve progress bar */}
-        {c.progressPercent !== undefined && !c.complete && (
-          <div className="mt-1.5">
-            <div className="h-1 w-full rounded-full bg-background overflow-hidden">
-              <div
-                className="h-full rounded-full bg-accent transition-all"
-                style={{ width: `${Math.min(c.progressPercent, 100)}%` }}
-              />
-            </div>
+      {/* Header row */}
+      <div className="flex items-center gap-3 p-3 pb-0">
+        {c.image ? (
+          <img
+            src={c.image}
+            alt={c.name}
+            className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-border"
+          />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-xs font-bold text-accent ring-1 ring-accent/20">
+            {c.ticker.slice(0, 2)}
           </div>
         )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
+              {c.name}
+            </p>
+            {c.rank <= 3 && (
+              <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
+                c.rank === 1 ? "bg-yellow-500/15 text-yellow-400" :
+                c.rank === 2 ? "bg-gray-400/15 text-gray-300" :
+                "bg-orange-500/15 text-orange-400"
+              }`}>
+                #{c.rank}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] text-text-muted font-mono">${c.ticker}</span>
+            {c.complete !== undefined && (
+              <span className={`rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
+                c.complete
+                  ? "bg-accent/15 text-accent"
+                  : "bg-yellow-500/15 text-yellow-400"
+              }`}>
+                {c.complete ? "GRADUATED" : "BONDING"}
+              </span>
+            )}
+            {joinedCommunities.has(c.ticker) && (
+              <span className="rounded px-1 py-0.5 text-[8px] font-bold leading-none bg-accent/15 text-accent">
+                JOINED
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Price / mcap */}
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-bold text-text-primary">
+            {c.fdv ? fmtUsd(c.fdv) : c.marketCapSol ? fmtSol(c.marketCapSol) : "—"}
+          </p>
+          {c.priceChange24h != null && (
+            <p className={`text-[10px] font-bold ${c.priceChange24h >= 0 ? "text-accent" : "text-red-400"}`}>
+              {fmtPct(c.priceChange24h)}
+            </p>
+          )}
+        </div>
       </div>
+
+      {/* Community stats row */}
+      <div className="flex items-center gap-3 px-3 pt-2.5 pb-2 text-[10px] text-text-muted">
+        <span className="flex items-center gap-1">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span className="font-medium text-text-secondary">{c.members}</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <span className="font-medium text-text-secondary">{c.msgCount}</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <span className="font-medium text-text-secondary">{c.raidCount}</span>
+        </span>
+        {c.holders != null && c.holders > 0 && (
+          <span className="ml-auto text-[9px]">{fmtCompact(c.holders)} holders</span>
+        )}
+        {c.tokenCreatedAt ? (
+          <span className="text-[9px]">{timeAgo(c.tokenCreatedAt)}</span>
+        ) : null}
+      </div>
+
+      {/* Bonding curve progress */}
+      {c.progressPercent !== undefined && !c.complete && (
+        <div className="px-3 pb-2.5">
+          <div className="h-1 w-full rounded-full bg-background overflow-hidden">
+            <div
+              className="h-full rounded-full bg-accent transition-all"
+              style={{ width: `${Math.min(c.progressPercent, 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
     </Link>
   );
 
@@ -199,8 +208,8 @@ export default function CommunitiesPage() {
       {/* Page header */}
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-lg font-bold text-text-primary">communities</h1>
-          <p className="text-[11px] text-text-muted mt-0.5">join a community to chat and raid together</p>
+          <h1 className="text-lg font-bold text-text-primary">Communities</h1>
+          <p className="text-[11px] text-text-muted mt-0.5">Join a community to chat and raid together</p>
         </div>
         <span className="text-[10px] text-text-muted">{enriched.length} communities</span>
       </div>
@@ -224,7 +233,7 @@ export default function CommunitiesPage() {
           {mostActive.length > 0 && (
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">most active</h2>
+                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Most Active</h2>
                 <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{mostActive.length}</span>
               </div>
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -236,7 +245,7 @@ export default function CommunitiesPage() {
           {/* Newest */}
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">newest</h2>
+                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">All Communities</h2>
               <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{newest.length}</span>
             </div>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -249,7 +258,7 @@ export default function CommunitiesPage() {
       {/* Token Feed */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">new tokens</h2>
+          <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">New Tokens</h2>
           <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">LIVE</span>
         </div>
         <ErrorBoundary>
