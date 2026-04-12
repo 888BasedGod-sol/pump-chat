@@ -66,6 +66,8 @@ export default function CommunitiesPage() {
   }, [messages, raids]);
 
   const enriched = useMemo(() => {
+    const MIN_MCAP_USD = 3000;
+
     return communities
       .filter((c) => {
         if (!searchQuery) return true;
@@ -83,8 +85,18 @@ export default function CommunitiesPage() {
           score: leader?.score ?? 0,
           rank: leader?.rank ?? 999,
         };
+      })
+      .filter((c) => {
+        // Always show communities with activity or that the user joined
+        if (c.msgCount > 0 || c.raidCount > 0 || c.members > 0) return true;
+        if (joinedCommunities.has(c.ticker)) return true;
+        // Otherwise require minimum market cap
+        if (c.fdv != null && c.fdv >= MIN_MCAP_USD) return true;
+        // Rough SOL→USD estimate (~$150/SOL) for communities only having SOL mcap
+        if (c.marketCapSol != null && c.marketCapSol * 150 >= MIN_MCAP_USD) return true;
+        return false;
       });
-  }, [communities, communityStats, communityLeaders, searchQuery]);
+  }, [communities, communityStats, communityLeaders, searchQuery, joinedCommunities]);
 
   const mostActive = useMemo(() => {
     return [...enriched]
