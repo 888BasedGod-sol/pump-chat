@@ -73,7 +73,7 @@ export default function CommunitiesPage() {
       .filter((c) => {
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
-        return c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q);
+        return c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q) || c.mint.toLowerCase().includes(q);
       })
       .map((c) => {
         const s = communityStats.get(c.name);
@@ -105,13 +105,6 @@ export default function CommunitiesPage() {
       .sort((a, b) => b.score - a.score || b.msgCount - a.msgCount)
       .slice(0, 6);
   }, [enriched]);
-
-  const newest = useMemo(() => {
-    const activeSet = new Set(mostActive.map((c) => c.ticker));
-    return [...enriched]
-      .filter((c) => !activeSet.has(c.ticker))
-      .sort((a, b) => (b.tokenCreatedAt ?? 0) - (a.tokenCreatedAt ?? 0));
-  }, [enriched, mostActive]);
 
   const renderCard = (c: (typeof enriched)[number]) => (
     <Link
@@ -245,16 +238,7 @@ export default function CommunitiesPage() {
             </div>
           )}
 
-          {/* Newest */}
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">All Communities</h2>
-              <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{newest.length}</span>
-            </div>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-              {newest.map((c) => renderCard(c))}
-            </div>
-          </div>
+
         </>
       )}
 

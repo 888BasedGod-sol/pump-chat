@@ -56,7 +56,7 @@ export default function AppHeader() {
               type="text"
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder="search for token or community"
+              placeholder="search by name, ticker, or contract address"
               className="h-8 w-64 rounded-md border border-border bg-background px-3 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
             />
           </div>
