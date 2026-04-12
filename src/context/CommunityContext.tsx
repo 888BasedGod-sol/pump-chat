@@ -500,9 +500,26 @@ export function CommunityProvider({
     setSelectedCommunity(ticker);
     if (ticker === "all") {
       setChatFilter("all");
+      return;
+    }
+    const found = communities.find((c) => c.ticker === ticker);
+    if (found) {
+      setChatFilter(found.name);
     } else {
-      const name = communities.find((c) => c.ticker === ticker)?.name ?? "all";
-      setChatFilter(name);
+      // Community not in local state — fetch from API and add it
+      fetch("/api/communities")
+        .then((r) => r.ok ? r.json() : [])
+        .then((all: Community[]) => {
+          const c = all.find((c: Community) => c.ticker === ticker);
+          if (c) {
+            setCommunities((prev) => {
+              if (prev.some((p) => p.ticker === ticker)) return prev;
+              return [...prev, c];
+            });
+            setChatFilter(c.name);
+          }
+        })
+        .catch(() => {});
     }
   }, [communities]);
 
