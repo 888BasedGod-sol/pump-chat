@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { raids, engagements } from "@/lib/schema";
+import { raids, engagements, messages } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { raidCreateSchema, raidEngageSchema } from "@/lib/validation";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
@@ -123,6 +123,18 @@ export async function POST(request: Request) {
     })
     .returning()
     .get();
+
+  // Insert a system message in the community chat announcing the raid
+  const raidAuthor = result.author?.replace(/^@/, "") || "someone";
+  await db
+    .insert(messages)
+    .values({
+      user: "system",
+      msg: `⚡ @${raidAuthor} started a raid! Rally the troops and engage the tweet.`,
+      community,
+      createdAt: Date.now(),
+    })
+    .run();
 
   return NextResponse.json(result);
 }

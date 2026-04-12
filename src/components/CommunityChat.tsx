@@ -146,7 +146,18 @@ export default function CommunityChat() {
                 </p>
               </div>
             )}
-            {filteredMessages.map((m) => (
+            {filteredMessages.map((m) =>
+              m.user === "system" ? (
+                <div key={m.id} className="flex items-center gap-2 rounded-lg bg-accent/5 border border-accent/10 px-3 py-2 my-1">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/20">
+                    <svg className="h-3 w-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <p className="text-[11px] font-medium text-accent leading-snug">{m.msg}</p>
+                  <span className="ml-auto text-[9px] text-text-muted shrink-0">{m.time}</span>
+                </div>
+              ) : (
               <div key={m.id} className="group flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-hover/50">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/10 text-[9px] font-bold text-accent mt-0.5">
                   {m.user.slice(0, 2).toUpperCase()}
@@ -159,7 +170,8 @@ export default function CommunityChat() {
                   <p className="text-xs text-text-secondary break-words leading-relaxed">{m.msg}</p>
                 </div>
               </div>
-            ))}
+              )
+            )}
             <div ref={bottomRef} />
           </div>
         )}
