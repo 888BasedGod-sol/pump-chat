@@ -847,17 +847,42 @@ export function CommunityProvider({
 
         if (newCommunities.length === 0) {
           // Still return updated if token metadata changed
+          // Persist metadata updates (images, mcap, etc.) to DB for existing communities
+          const toUpdate = tokens
+            .filter((t) => existingMints.has(t.address) && t.image)
+            .map((t) => ({ mint: t.address, image: t.image, marketCapSol: t.marketCapSol, complete: t.complete }));
+          if (toUpdate.length > 0) {
+            fetch("/api/communities", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ communities: toUpdate }),
+            }).catch(() => {});
+          }
           return updated;
         }
 
-        // Persist new communities to DB (only send fields the API expects)
+        // Persist new communities to DB (with image + metadata)
         fetch("/api/communities", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            communities: newCommunities.map(({ ticker, name, mint }) => ({ ticker, name, mint })),
+            communities: newCommunities.map(({ ticker, name, mint, image, marketCapSol, complete }) => ({
+              ticker, name, mint, image, marketCapSol, complete,
+            })),
           }),
         }).catch(() => {});
+
+        // Also persist metadata updates for existing communities
+        const toUpdate = tokens
+          .filter((t) => existingMints.has(t.address) && t.image)
+          .map((t) => ({ mint: t.address, image: t.image, marketCapSol: t.marketCapSol, complete: t.complete }));
+        if (toUpdate.length > 0) {
+          fetch("/api/communities", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ communities: toUpdate }),
+          }).catch(() => {});
+        }
 
         return [...updated, ...newCommunities];
       });

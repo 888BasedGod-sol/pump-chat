@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { communities } from "@/lib/schema";
 import { communityBulkSchema } from "@/lib/validation";
+import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
           members: 0,
           active: true,
           createdAt: Date.now(),
+          image: item.image || null,
+          marketCapSol: item.marketCapSol != null ? Math.round(item.marketCapSol) : null,
+          complete: item.complete ?? null,
         })
         .onConflictDoNothing()
         .run();
@@ -41,4 +45,37 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ inserted });
+}
+
+// PATCH — update metadata for existing communities (image, marketCapSol, complete)
+export async function PATCH(request: Request) {
+  const body = await request.json();
+  if (!Array.isArray(body.communities)) {
+    return NextResponse.json({ error: "communities array required" }, { status: 400 });
+  }
+
+  let updated = 0;
+  for (const item of body.communities) {
+    if (!item.mint || typeof item.mint !== "string") continue;
+
+    const setFields: Record<string, unknown> = {};
+    if (item.image && typeof item.image === "string") setFields.image = item.image;
+    if (item.marketCapSol != null) setFields.marketCapSol = Math.round(item.marketCapSol);
+    if (item.complete != null) setFields.complete = item.complete;
+
+    if (Object.keys(setFields).length === 0) continue;
+
+    try {
+      const result = await db
+        .update(communities)
+        .set(setFields)
+        .where(eq(communities.mint, item.mint))
+        .run();
+      if (result.rowsAffected > 0) updated++;
+    } catch {
+      // skip errors
+    }
+  }
+
+  return NextResponse.json({ updated });
 }

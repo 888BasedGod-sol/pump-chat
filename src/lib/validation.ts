@@ -42,6 +42,9 @@ export const communityBulkSchema = z.object({
       ticker: z.string().min(1).max(20).regex(/^[A-Z0-9]+$/i, "Ticker must be alphanumeric"),
       name: z.string().max(100).optional(),
       mint: solanaAddress,
+      image: z.string().url().max(500).optional(),
+      marketCapSol: z.number().optional(),
+      complete: z.boolean().optional(),
     })
   ).min(1).max(100),
 });
