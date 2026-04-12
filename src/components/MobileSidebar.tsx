@@ -55,23 +55,6 @@ export default function MobileSidebar() {
 
         <div className="flex-1 overflow-y-auto p-3">
           <div className="space-y-0.5">
-            <button
-              onClick={() => { selectCommunity("all"); setOpen(false); }}
-              className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
-                selectedCommunity === "all"
-                  ? "bg-accent/10 border border-accent/30"
-                  : "hover:bg-surface-hover"
-              }`}
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-[10px] font-bold text-accent">
-                ALL
-              </span>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-xs font-medium text-text-primary">all communities</p>
-                <p className="text-[10px] text-text-muted">global feed</p>
-              </div>
-            </button>
-
             {communities.map((c) => (
               <button
                 key={c.ticker}

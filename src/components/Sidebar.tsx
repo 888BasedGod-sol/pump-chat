@@ -30,24 +30,6 @@ export default function Sidebar() {
           communities
         </p>
         <div className="space-y-0.5">
-          {/* All communities option */}
-          <button
-            onClick={() => selectCommunity("all")}
-            className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
-              selectedCommunity === "all"
-                ? "bg-accent/10 border border-accent/30"
-                : "hover:bg-surface-hover"
-            }`}
-          >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-[10px] font-bold text-accent">
-              ALL
-            </span>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="truncate text-xs font-medium text-text-primary">all communities</p>
-              <p className="text-[10px] text-text-muted">global feed</p>
-            </div>
-          </button>
-
           {filteredCommunities.map((c) => (
             <button
               key={c.ticker}
