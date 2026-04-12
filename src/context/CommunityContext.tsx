@@ -227,7 +227,14 @@ export function CommunityProvider({
   const [raids, setRaids] = useState<Raid[]>(SEED_RAIDS);
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [chatFilter, setChatFilter] = useState("all");
+  // chatFilter is derived from selectedCommunity + communities — always in sync
+  const chatFilter = useMemo(() => {
+    if (selectedCommunity === "all") return "all";
+    return communities.find((c) => c.ticker === selectedCommunity)?.name ?? "all";
+  }, [selectedCommunity, communities]);
+  const setChatFilter = useCallback((_f: string) => {
+    // no-op — chatFilter is now derived. Kept for compatibility.
+  }, []);
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<"24h" | "7d" | "all">("24h");
   const [leaderboardMode, setLeaderboardMode] = useState<"communities" | "users">("communities");
   const [searchQuery, setSearchQuery] = useState("");
@@ -498,15 +505,8 @@ export function CommunityProvider({
   /* -- select community ------------------------------------------- */
   const selectCommunity = useCallback((ticker: string) => {
     setSelectedCommunity(ticker);
-    if (ticker === "all") {
-      setChatFilter("all");
-      return;
-    }
-    const found = communities.find((c) => c.ticker === ticker);
-    if (found) {
-      setChatFilter(found.name);
-    } else {
-      // Community not in local state — fetch from API and add it
+    // If community not in local state, fetch from API and add it
+    if (ticker !== "all" && !communities.some((c) => c.ticker === ticker)) {
       fetch("/api/communities")
         .then((r) => r.ok ? r.json() : [])
         .then((all: Community[]) => {
@@ -516,7 +516,6 @@ export function CommunityProvider({
               if (prev.some((p) => p.ticker === ticker)) return prev;
               return [...prev, c];
             });
-            setChatFilter(c.name);
           }
         })
         .catch(() => {});
