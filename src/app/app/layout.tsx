@@ -3,6 +3,8 @@ import WalletProvider from "@/components/WalletProvider";
 import CommunityProviderWrapper from "@/components/CommunityProviderWrapper";
 import AuthProvider from "@/components/AuthProvider";
 
+export const dynamic = "force-dynamic";
+
 export default function AppLayout({
   children,
 }: {

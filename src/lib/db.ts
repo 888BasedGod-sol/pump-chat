@@ -10,7 +10,9 @@ function initDb() {
     authToken: process.env.TURSO_AUTH_TOKEN,
   });
 
-  // Auto-create tables
+  const db = drizzle(client, { schema });
+
+  // Auto-create tables (fire-and-forget — runs once on init)
   client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       x_id TEXT PRIMARY KEY,
@@ -80,9 +82,11 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_raids_community ON raids(community);
     CREATE INDEX IF NOT EXISTS idx_community_owners_ticker ON community_owners(community_ticker);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_community_owners_unique ON community_owners(community_ticker, x_id);
-  `);
+  `).catch((err) => {
+    console.warn("DB init warning (may be normal during build):", err.message);
+  });
 
-  return drizzle(client, { schema });
+  return db;
 }
 
 export const db = globalForDb.__db ?? (globalForDb.__db = initDb());
