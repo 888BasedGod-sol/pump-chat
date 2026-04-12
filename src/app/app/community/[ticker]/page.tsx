@@ -28,12 +28,28 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
   const { communities, selectCommunity, communityLeaders, messages, raids, joinedCommunities, joinCommunity, leaveCommunity, isSignedIn } = useCommunity();
 
   const [mobileTab, setMobileTab] = useState<"raids" | "chat">("raids");
-  const community = communities.find((c) => c.ticker === ticker);
+  const [fetchedCommunity, setFetchedCommunity] = useState<typeof communities[number] | null>(null);
+  const community = communities.find((c) => c.ticker === ticker) ?? fetchedCommunity;
   const leader = communityLeaders.find((l) => l.ticker === ticker);
 
   useEffect(() => {
     if (ticker) selectCommunity(ticker);
   }, [ticker, selectCommunity]);
+
+  // If community not in context (e.g. just created via lookup), fetch from API
+  useEffect(() => {
+    if (community || !ticker) return;
+    let cancelled = false;
+    fetch("/api/communities")
+      .then((r) => r.ok ? r.json() : [])
+      .then((all: typeof communities) => {
+        if (cancelled) return;
+        const found = all.find((c: typeof communities[number]) => c.ticker === ticker);
+        if (found) setFetchedCommunity(found);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [community, ticker]);
 
   if (!community) {
     return (
