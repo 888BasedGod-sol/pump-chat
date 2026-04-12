@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenFeed from "@/components/TokenFeed";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 /* ---- formatting helpers ---- */
 function fmtUsd(n: number | null | undefined): string {
@@ -48,6 +49,11 @@ function timeAgo(ts: number | null | undefined): string {
 
 export default function CommunitiesPage() {
   const { communities, messages, raids, communityLeaders, searchQuery, isLoading, joinedCommunities } = useCommunity();
+  const router = useRouter();
+  const [lookingUp, setLookingUp] = useState(false);
+
+  // Detect Solana address (base58, 32-50 chars)
+  const isSolanaAddress = useCallback((q: string) => /^[1-9A-HJ-NP-Za-km-z]{32,50}$/.test(q.trim()), []);
 
   // Build stats per community
   const communityStats = useMemo(() => {
@@ -107,6 +113,21 @@ export default function CommunitiesPage() {
       .sort((a, b) => b.score - a.score || b.msgCount - a.msgCount)
       .slice(0, 6);
   }, [enriched]);
+
+  // Auto-lookup: when searching a Solana address with no local match, look it up on-chain
+  useEffect(() => {
+    if (!searchQuery || !isSolanaAddress(searchQuery) || enriched.length > 0 || lookingUp) return;
+    let cancelled = false;
+    setLookingUp(true);
+    fetch(`/api/communities/lookup?mint=${encodeURIComponent(searchQuery.trim())}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.ticker) return;
+        router.push(`/app/community/${data.ticker}`);
+      })
+      .finally(() => { if (!cancelled) setLookingUp(false); });
+    return () => { cancelled = true; };
+  }, [searchQuery, enriched.length, isSolanaAddress, lookingUp, router]);
 
   const renderCard = (c: (typeof enriched)[number]) => (
     <Link
@@ -221,9 +242,16 @@ export default function CommunitiesPage() {
         </div>
       ) : enriched.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
-          <p className="text-sm text-text-muted">
-            {searchQuery ? "no communities match your search" : "no communities yet — tokens will auto-create them"}
-          </p>
+          {lookingUp ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <p className="text-sm text-text-muted">looking up token on-chain...</p>
+            </div>
+          ) : (
+            <p className="text-sm text-text-muted">
+              {searchQuery ? "no communities match your search" : "no communities yet — tokens will auto-create them"}
+            </p>
+          )}
         </div>
       ) : (
         <>
