@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenFeed from "@/components/TokenFeed";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
 
 /* ---- formatting helpers ---- */
@@ -120,17 +121,7 @@ export default function CommunitiesPage() {
     >
       {/* Header row */}
       <div className="flex items-center gap-3 p-3 pb-0">
-        {c.image ? (
-          <img
-            src={c.image}
-            alt={c.name}
-            className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-border"
-          />
-        ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-xs font-bold text-accent ring-1 ring-accent/20">
-            {c.ticker.slice(0, 2)}
-          </div>
-        )}
+        <TokenImage src={c.image} ticker={c.ticker} alt={c.name} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCommunity } from "@/context/CommunityContext";
+import TokenImage from "@/components/TokenImage";
 
 export default function MobileSidebar() {
   const { communities, selectedCommunity, selectCommunity, raids, addCommunity, joinedCommunities } = useCommunity();
@@ -85,9 +86,7 @@ export default function MobileSidebar() {
                     : "hover:bg-surface-hover"
                 }`}
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-[10px] font-bold text-accent">
-                  {c.ticker.slice(0, 2)}
-                </span>
+                <TokenImage src={c.image} ticker={c.ticker} size="sm" />
                 <div className="min-w-0 flex-1 text-left">
                   <p className="truncate text-xs font-medium text-text-primary">{c.name}</p>
                   <p className="text-[10px] text-text-muted">

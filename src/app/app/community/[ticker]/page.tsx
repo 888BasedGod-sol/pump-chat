@@ -5,6 +5,7 @@ import { useCommunity } from "@/context/CommunityContext";
 import CommunityChat from "@/components/CommunityChat";
 import RaidPanel from "@/components/RaidPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
 
 /* ---- helpers ---- */
@@ -94,17 +95,7 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
             </Link>
 
             {/* Token identity — compact */}
-            {community.image ? (
-              <img
-                src={community.image}
-                alt={community.name}
-                className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-accent/20"
-              />
-            ) : (
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-base font-bold text-accent ring-1 ring-accent/20">
-                {community.ticker.slice(0, 2)}
-              </div>
-            )}
+            <TokenImage src={community.image} ticker={community.ticker} alt={community.name} className="ring-accent/20" />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
