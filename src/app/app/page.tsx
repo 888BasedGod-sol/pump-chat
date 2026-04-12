@@ -2,7 +2,6 @@
 
 import { useMemo, useEffect, useState, useCallback } from "react";
 import { useCommunity } from "@/context/CommunityContext";
-import TokenFeed from "@/components/TokenFeed";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
@@ -280,21 +279,22 @@ export default function CommunitiesPage() {
                   </div>
                 </div>
               )}
+
+              {/* All Communities */}
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">All Communities</h2>
+                  <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{enriched.length}</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {enriched.map((c) => renderCard(c))}
+                </div>
+              </div>
             </>
           )}
         </>
       )}
 
-      {/* Token Feed */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">New Tokens</h2>
-          <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">LIVE</span>
-        </div>
-        <ErrorBoundary>
-          <TokenFeed />
-        </ErrorBoundary>
-      </div>
     </div>
   );
 }
