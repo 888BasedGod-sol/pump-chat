@@ -250,7 +250,7 @@ export function CommunityProvider({
         ]);
 
         if (Array.isArray(commRes) && commRes.length > 0) {
-          setCommunities(commRes.map((r: Record<string, unknown>) => ({
+          const mapped = commRes.map((r: Record<string, unknown>) => ({
             ticker: r.ticker as string,
             name: r.name as string,
             mint: r.mint as string,
@@ -259,7 +259,32 @@ export function CommunityProvider({
             image: (r.image as string) || undefined,
             marketCapSol: (r.marketCapSol as number) || undefined,
             complete: r.complete != null ? (r.complete as boolean) : undefined,
-          })));
+          }));
+          setCommunities(mapped);
+
+          // If many communities lack images, trigger a background backfill
+          const missingImages = mapped.filter((c) => !c.image).length;
+          if (missingImages > 5) {
+            fetch("/api/communities/backfill", { method: "POST" })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.updated > 0) {
+                  // Re-fetch communities to pick up backfilled images
+                  fetch("/api/communities").then((r) => r.json()).then((fresh) => {
+                    if (Array.isArray(fresh) && fresh.length > 0) {
+                      setCommunities((prev) =>
+                        prev.map((c) => {
+                          const f = fresh.find((fc: Record<string, unknown>) => fc.ticker === c.ticker);
+                          if (f?.image && !c.image) return { ...c, image: f.image as string };
+                          return c;
+                        })
+                      );
+                    }
+                  }).catch(() => {});
+                }
+              })
+              .catch(() => {});
+          }
         }
         communitiesLoaded.current = true;
         if (Array.isArray(msgRes) && msgRes.length > 0) {
