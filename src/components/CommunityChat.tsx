@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivySafe } from "@/hooks/usePrivySafe";
 import { useCommunity } from "@/context/CommunityContext";
 import Link from "next/link";
 
 export default function CommunityChat() {
   const { messages, sendMessage, chatFilter, setChatFilter, communities, selectedCommunity, isSignedIn } = useCommunity();
-  const { ready, login } = usePrivy();
+  const { ready, login } = usePrivySafe();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 

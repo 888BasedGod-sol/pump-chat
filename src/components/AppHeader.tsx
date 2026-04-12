@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivySafe } from "@/hooks/usePrivySafe";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Image from "next/image";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -10,7 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function AppHeader() {
-  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { ready, authenticated, user, login, logout } = usePrivySafe();
   const { publicKey, connected, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
   const { searchQuery, setSearchQuery } = useCommunity();
