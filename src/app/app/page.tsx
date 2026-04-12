@@ -227,20 +227,33 @@ export default function CommunitiesPage() {
         </div>
       ) : (
         <>
-          {/* Most Active */}
-          {mostActive.length > 0 && (
+          {/* Search Results — show all matches when searching */}
+          {searchQuery ? (
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Most Active</h2>
-                <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{mostActive.length}</span>
+                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Search Results</h2>
+                <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{enriched.length}</span>
               </div>
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                {mostActive.map((c) => renderCard(c))}
+                {enriched.map((c) => renderCard(c))}
               </div>
             </div>
+          ) : (
+            <>
+              {/* Most Active */}
+              {mostActive.length > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Most Active</h2>
+                    <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{mostActive.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {mostActive.map((c) => renderCard(c))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
-
-
         </>
       )}
 
