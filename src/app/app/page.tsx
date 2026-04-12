@@ -88,6 +88,8 @@ export default function CommunitiesPage() {
         };
       })
       .filter((c) => {
+        // Skip mcap filter when user is actively searching
+        if (searchQuery) return true;
         // Always show communities with activity or that the user joined
         if (c.msgCount > 0 || c.raidCount > 0 || c.members > 0) return true;
         if (joinedCommunities.has(c.ticker)) return true;
