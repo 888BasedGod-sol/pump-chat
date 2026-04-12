@@ -16,7 +16,6 @@ export default function RaidPanel() {
   const [targetRTs, setTargetRTs] = useState("50");
   const [targetReplies, setTargetReplies] = useState("25");
   const [showTargets, setShowTargets] = useState(false);
-  const [warCry, setWarCry] = useState("");
   const [activeTab, setActiveTab] = useState<RaidTab>("active");
   const [expandedRaid, setExpandedRaid] = useState<number | null>(null);
 
@@ -73,12 +72,11 @@ export default function RaidPanel() {
       likes: Math.max(1, parseInt(targetLikes) || 100),
       retweets: Math.max(1, parseInt(targetRTs) || 50),
       replies: Math.max(1, parseInt(targetReplies) || 25),
-    }, warCry.trim() || undefined);
+    });
     setTweetUrl("");
     setTargetLikes("100");
     setTargetRTs("50");
     setTargetReplies("25");
-    setWarCry("");
     setShowTargets(false);
     setShowCreate(false);
   };
@@ -225,35 +223,12 @@ export default function RaidPanel() {
             <p className="text-[10px] text-warning">waiting for communities to load from token feed...</p>
           )}
 
-          {/* War cry */}
-          <div>
-            <label className="text-[10px] font-medium text-text-muted uppercase tracking-wide mb-1 block">
-              war cry <span className="normal-case text-text-muted/60">(optional — rally your community)</span>
-            </label>
-            <div className="relative">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-              </svg>
-              <input
-                type="text"
-                value={warCry}
-                onChange={(e) => setWarCry(e.target.value.slice(0, 140))}
-                placeholder="LFG! Pump it to the moon!"
-                className="w-full rounded-md border border-border bg-background pl-8 pr-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none transition-colors"
-              />
-            </div>
-            {warCry.length > 0 && (
-              <p className="text-[9px] text-text-muted/60 mt-0.5 text-right">{warCry.length}/140</p>
-            )}
-          </div>
-
           <div className="flex justify-end gap-2">
             <button
               onClick={() => {
                 setShowCreate(false);
                 setTweetUrl("");
                 setUrlError("");
-                setWarCry("");
               }}
               className="rounded-md border border-border px-3 py-1.5 text-[10px] font-medium text-text-muted transition-colors hover:text-text-secondary"
             >
