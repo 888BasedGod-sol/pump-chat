@@ -65,7 +65,7 @@ export default function RaidPanel() {
   const handleCreate = () => {
     const parsed = parseTweetUrl(tweetUrl);
     if (!parsed) {
-      setUrlError("paste a valid twitter.com or x.com tweet URL");
+      setUrlError("Paste a valid x.com tweet URL");
       return;
     }
     setUrlError("");
@@ -101,7 +101,7 @@ export default function RaidPanel() {
             {activeRaids.length > 0 && (
               <p className="text-[10px] text-accent font-medium flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                {activeRaids.length} live{activeRaids.length !== 1 ? "" : ""} &middot; {raidsNeedingAction.length} need you
+                {activeRaids.length} live &middot; {raidsNeedingAction.length} need you
               </p>
             )}
           </div>
@@ -320,10 +320,10 @@ export default function RaidPanel() {
             </div>
             <p className="text-sm font-medium text-text-muted mb-1">
               {activeTab === "active"
-                ? "no active raids"
+                ? "No active raids"
                 : activeTab === "completed"
-                ? "no completed raids yet"
-                : "no expired raids"}
+                ? "No completed raids"
+                : "No expired raids"}
             </p>
             <p className="text-[11px] text-text-muted/60">
               {activeTab === "active"

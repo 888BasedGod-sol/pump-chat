@@ -98,7 +98,7 @@ export default function MobileSidebar() {
 
             {communities.length === 0 && (
               <p className="px-2 py-3 text-[10px] text-text-muted text-center">
-                no communities yet. create one below.
+                No communities yet. Join one below.
               </p>
             )}
           </div>

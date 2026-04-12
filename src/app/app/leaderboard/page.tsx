@@ -60,7 +60,7 @@ export default function LeaderboardPage() {
               <span className="flex-1">community</span>
               <span className="w-16 text-center hidden sm:block">msgs</span>
               <span className="w-16 text-center hidden sm:block">raids</span>
-              <span className="w-16 text-center hidden sm:block">engages</span>
+              <span className="w-16 text-center hidden sm:block">engaged</span>
               <span className="w-16 text-center hidden sm:block">users</span>
               <span className="w-20 text-right">score</span>
             </div>
@@ -126,9 +126,9 @@ export default function LeaderboardPage() {
       <div className="rounded-lg border border-border bg-surface/50 p-4">
         <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">how scoring works</p>
         <div className="flex gap-6 text-[11px] text-text-secondary">
-          <span><span className="font-bold text-accent">1pt</span> per message</span>
-          <span><span className="font-bold text-accent">2pts</span> per engagement</span>
-          <span><span className="font-bold text-accent">5pts</span> per raid</span>
+          <span><span className="font-bold text-accent">1 pt</span> per message</span>
+          <span><span className="font-bold text-accent">2 pts</span> per engagement</span>
+          <span><span className="font-bold text-accent">5 pts</span> per raid</span>
         </div>
       </div>
     </div>

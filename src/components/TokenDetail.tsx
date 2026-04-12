@@ -245,7 +245,7 @@ export default function TokenDetail({ token, onClose }: TokenDetailProps) {
         </div>
         <p className="text-[9px] text-text-muted mt-1">
           {graduated
-            ? "this token has graduated from the bonding curve and is now on raydium"
+            ? "This token has graduated from the bonding curve and is now on Raydium"
             : `${(85 - token.realSolReserves).toFixed(1)} SOL remaining until graduation (~85 SOL target)`}
         </p>
       </div>
@@ -514,7 +514,7 @@ export default function TokenDetail({ token, onClose }: TokenDetailProps) {
           rel="noopener noreferrer"
           className="flex-1 rounded-md bg-accent/10 px-3 py-2 text-center text-[10px] font-bold text-accent transition-colors hover:bg-accent/20"
         >
-          view on pump.fun
+          View on Pump.fun
         </a>
         <a
           href={`https://solscan.io/token/${token.address}`}
@@ -522,7 +522,7 @@ export default function TokenDetail({ token, onClose }: TokenDetailProps) {
           rel="noopener noreferrer"
           className="flex-1 rounded-md border border-border px-3 py-2 text-center text-[10px] font-medium text-text-muted transition-colors hover:text-text-secondary hover:bg-surface-hover"
         >
-          solscan
+          Solscan
         </a>
         <a
           href={`https://birdeye.so/token/${token.address}?chain=solana`}
@@ -530,7 +530,7 @@ export default function TokenDetail({ token, onClose }: TokenDetailProps) {
           rel="noopener noreferrer"
           className="flex-1 rounded-md border border-border px-3 py-2 text-center text-[10px] font-medium text-text-muted transition-colors hover:text-text-secondary hover:bg-surface-hover"
         >
-          birdeye
+          Birdeye
         </a>
       </div>
     </div>

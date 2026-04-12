@@ -105,7 +105,7 @@ export default function Leaderboard() {
                     <span className="text-text-muted/40">|</span>
                     <span>{c.raids} raids</span>
                     <span className="text-text-muted/40">|</span>
-                    <span>{c.engagements} engages</span>
+                    <span>{c.engagements} engaged</span>
                     <span className="text-text-muted/40">|</span>
                     <span>{c.participants} users</span>
                   </div>

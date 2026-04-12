@@ -268,7 +268,7 @@ export default function RaidCard({
         <div className="px-4 pb-3 pl-16 flex items-center gap-2">
           {allDone ? (
             <div className="flex items-center gap-2 flex-1">
-              <span className="text-[10px] text-accent font-bold">all done! {userXP} XP earned</span>
+              <span className="text-[10px] text-accent font-bold">All done! {userXP} XP earned</span>
               <a
                 href={`https://x.com/i/status/${raid.tweetId}`}
                 target="_blank"
@@ -457,7 +457,7 @@ export default function RaidCard({
           {isActive && (
             <div className="flex items-center gap-2">
               {allDone ? (
-                <span className="text-[11px] text-accent font-bold">all actions completed! {userXP} XP earned</span>
+                <span className="text-[11px] text-accent font-bold">All done! {userXP} XP earned</span>
               ) : (
                 <>
                   <button
