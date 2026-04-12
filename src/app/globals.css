@@ -1,26 +1,242 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: #0e0f14;
+  --color-surface: #151722;
+  --color-surface-hover: #1c1f2e;
+  --color-border: #2a2d3e;
+  --color-accent: #4ade80;
+  --color-accent-hover: #22c55e;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+/* Smooth fade-in for panels */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  50% { box-shadow: 0 0 8px 2px rgba(74, 222, 128, 0.15); }
+}
+
+/* Progress bar shimmer */
+@keyframes progress-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Live raid border pulse */
+@keyframes raid-glow {
+  0%, 100% {
+    border-color: rgba(74, 222, 128, 0.15);
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+  }
+  50% {
+    border-color: rgba(74, 222, 128, 0.35);
+    box-shadow: 0 0 12px -2px rgba(74, 222, 128, 0.1);
+  }
+}
+
+/* Action button bounce on hover */
+@keyframes btn-press {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+}
+
+/* Countdown timer pulse */
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Progress fill animation */
+@keyframes fill-in {
+  from { width: 0%; }
+}
+
+/* Engagement pop */
+@keyframes engage-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out both;
+}
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out both;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+.animate-raid-glow {
+  animation: raid-glow 2.5s ease-in-out infinite;
+}
+.animate-timer-pulse {
+  animation: timer-pulse 1.5s ease-in-out infinite;
+}
+.animate-engage-pop {
+  animation: engage-pop 0.3s ease-out;
+}
+.progress-shimmer {
+  background: linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: progress-shimmer 2s linear infinite;
+}
+.progress-fill {
+  animation: fill-in 0.8s ease-out both;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  animation: fadeIn 0.15s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+
+/* Urgency: low-time warning shake */
+@keyframes urgency-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-1px); }
+  20%, 40%, 60%, 80% { transform: translateX(1px); }
+}
+@keyframes urgency-border {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.2); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 0 16px -4px rgba(239, 68, 68, 0.15); }
+}
+.animate-urgency {
+  animation: urgency-border 1s ease-in-out infinite;
+}
+.animate-urgency-critical {
+  animation: urgency-border 0.5s ease-in-out infinite, urgency-shake 0.4s ease-in-out infinite;
+}
+
+/* Milestone flash */
+@keyframes milestone-flash {
+  0% { background-color: transparent; }
+  15% { background-color: rgba(74, 222, 128, 0.15); }
+  100% { background-color: transparent; }
+}
+.animate-milestone {
+  animation: milestone-flash 1.5s ease-out;
+}
+
+/* Confetti burst */
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(120px) rotate(720deg); opacity: 0; }
+}
+@keyframes confetti-pop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* XP float up */
+@keyframes xp-float {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.8); }
+}
+.animate-xp-float {
+  animation: xp-float 1.2s ease-out forwards;
+}
+
+/* War cry text glow */
+@keyframes cry-glow {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 8px rgba(74, 222, 128, 0.3); }
+}
+.animate-cry {
+  animation: cry-glow 2s ease-in-out infinite;
+}
+
+/* Activity ticker slide in */
+@keyframes ticker-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-ticker-in {
+  animation: ticker-in 0.3s ease-out both;
+}
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+
+/* Raid action pill — compact inline buttons */
+.raid-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+}
+.raid-action-pill:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.raid-action-pill:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.raid-action-pill:disabled {
+  cursor: default;
+}
+.raid-action-done {
+  opacity: 0.7;
+}
+
+/* Slide down for expanded content */
+@keyframes slide-down {
+  from { opacity: 0; max-height: 0; transform: translateY(-8px); }
+  to { opacity: 1; max-height: 800px; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out both;
+  overflow: hidden;
+}
+
+/* Page entrance */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-page-in {
+  animation: page-in 0.2s ease-out both;
 }
