@@ -18,5 +18,7 @@ export async function GET() {
     engagements: engagementCount.count,
     messages: messageCount.count,
     users: userCount.count,
+  }, {
+    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
   });
 }

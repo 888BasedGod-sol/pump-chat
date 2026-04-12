@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 // GET — list all communities
 export async function GET() {
   const rows = await db.select().from(communities).all();
-  return NextResponse.json(rows);
+  return NextResponse.json(rows, {
+    headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
+  });
 }
 
 // POST — upsert communities (bulk sync from token feed)

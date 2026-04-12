@@ -25,7 +25,9 @@ export async function GET() {
     community: m.community,
     time: formatTime(m.createdAt),
   }));
-  return NextResponse.json(mapped);
+  return NextResponse.json(mapped, {
+    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30" },
+  });
 }
 
 // POST — send a message (requires auth)

@@ -344,7 +344,7 @@ export function CommunityProvider({
     }
   }, [username]);
 
-  /* -- poll raids every 10s for real-time engagement counts -------- */
+  /* -- poll raids every 30s for real-time engagement counts -------- */
   useEffect(() => {
     if (isLoading) return;
     const interval = setInterval(async () => {
@@ -352,7 +352,7 @@ export function CommunityProvider({
       // (the PATCH + immediate refresh handles that window)
       if (Date.now() - lastEngageRef.current < 3000) return;
       await fetchRaids();
-    }, 10_000);
+    }, 30_000);
     return () => clearInterval(interval);
   }, [isLoading, fetchRaids]);
 

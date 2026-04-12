@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { raids, engagements, messages } from "@/lib/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { raidCreateSchema, raidEngageSchema } from "@/lib/validation";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { verifyPrivyToken } from "@/lib/auth";
@@ -16,15 +16,14 @@ export async function GET(request: Request) {
   const rows = await db.select().from(raids).orderBy(desc(raids.createdAt)).limit(100).all();
   const raidIds = rows.map((r) => r.id);
 
-  // Batch-fetch all engagements for these raids
+  // Batch-fetch engagements only for the fetched raids (not full table scan)
   const allEngagementRows = raidIds.length > 0
-    ? await db.select().from(engagements).all()
+    ? await db.select().from(engagements).where(inArray(engagements.raidId, raidIds)).all()
     : [];
   // Build per-raid engagers map and per-user engagement set
   const raidEngagers: Record<number, Record<string, string[]>> = {};
   const userEngagements = new Set<string>();
   for (const e of allEngagementRows) {
-    if (!raidIds.includes(e.raidId)) continue;
     // Build engagers map: { raidId: { "@user": ["like", "retweet"] } }
     if (!raidEngagers[e.raidId]) raidEngagers[e.raidId] = {};
     if (!raidEngagers[e.raidId][e.user]) raidEngagers[e.raidId][e.user] = [];
@@ -57,7 +56,9 @@ export async function GET(request: Request) {
     engagers: raidEngagers[r.id] ?? {},
     warCry: r.warCry ?? undefined,
   }));
-  return NextResponse.json(mapped);
+  return NextResponse.json(mapped, {
+    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30" },
+  });
 }
 
 // POST — create a new raid (requires auth)

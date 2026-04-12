@@ -42,10 +42,6 @@ body {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
   50% { box-shadow: 0 0 8px 2px rgba(74, 222, 128, 0.15); }
@@ -55,18 +51,6 @@ body {
 @keyframes progress-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
-}
-
-/* Live raid border pulse */
-@keyframes raid-glow {
-  0%, 100% {
-    border-color: rgba(74, 222, 128, 0.15);
-    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
-  }
-  50% {
-    border-color: rgba(74, 222, 128, 0.35);
-    box-shadow: 0 0 12px -2px rgba(74, 222, 128, 0.1);
-  }
 }
 
 /* Action button bounce on hover */
@@ -96,14 +80,8 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out both;
 }
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out both;
-}
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
-}
-.animate-raid-glow {
-  animation: raid-glow 2.5s ease-in-out infinite;
 }
 .animate-timer-pulse {
   animation: timer-pulse 1.5s ease-in-out infinite;
@@ -119,15 +97,6 @@ body {
 .progress-fill {
   animation: fill-in 0.8s ease-out both;
 }
-
-/* Stagger children animations */
-.stagger-children > * {
-  animation: fadeIn 0.15s ease-out both;
-}
-.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
 
 /* Urgency: low-time warning shake */
 @keyframes urgency-shake {
@@ -184,17 +153,6 @@ body {
 .animate-cry {
   animation: cry-glow 2s ease-in-out infinite;
 }
-
-/* Activity ticker slide in */
-@keyframes ticker-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-.animate-ticker-in {
-  animation: ticker-in 0.3s ease-out both;
-}
-.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 
 /* Raid action pill — compact inline buttons */
 .raid-action-pill {
