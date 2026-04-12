@@ -408,28 +408,48 @@ export default function RaidCard({
             </div>
           </div>
 
-          {/* Raiders count */}
+          {/* Raiders — per-account engagement breakdown */}
           {raid.participants > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-1.5">
-                {Array.from({ length: Math.min(raid.participants, 4) }).map((_, i) => (
-                  <div key={i} className="h-5 w-5 rounded-full bg-gradient-to-br from-accent/30 to-accent/10 border border-surface flex items-center justify-center">
-                    <svg className="h-2.5 w-2.5 text-accent/60" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                    </svg>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-text-muted font-medium">
+                  <span className="text-accent font-bold">{raid.participants}</span> raider{raid.participants !== 1 ? "s" : ""}
+                  {raid.participants >= 5 && <span className="text-warning ml-1 font-bold">hot!</span>}
+                  {raid.participants >= 15 && <span className="text-danger ml-1 font-bold">on fire!</span>}
+                </span>
+                {userXP > 0 && (
+                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-black text-accent">
+                    {userXP} XP
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(raid.engagers).slice(0, 12).map(([engager, types]) => (
+                  <div key={engager} className="flex items-center gap-1 rounded-md bg-background/60 border border-border/40 px-1.5 py-0.5">
+                    <span className="text-[9px] font-bold text-text-primary truncate max-w-[80px]">{engager}</span>
+                    <div className="flex items-center gap-0.5">
+                      {types.includes("like") && (
+                        <svg className="h-2.5 w-2.5 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      )}
+                      {types.includes("retweet") && (
+                        <svg className="h-2.5 w-2.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                      {types.includes("reply") && (
+                        <svg className="h-2.5 w-2.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      )}
+                    </div>
                   </div>
                 ))}
+                {Object.keys(raid.engagers).length > 12 && (
+                  <span className="text-[9px] text-text-muted self-center">+{Object.keys(raid.engagers).length - 12} more</span>
+                )}
               </div>
-              <span className="text-[10px] text-text-muted">
-                <span className="text-accent font-bold">{raid.participants}</span> raider{raid.participants !== 1 ? "s" : ""}
-                {raid.participants >= 5 && <span className="text-warning ml-1 font-bold">hot!</span>}
-                {raid.participants >= 15 && <span className="text-danger ml-1 font-bold">on fire!</span>}
-              </span>
-              {userXP > 0 && (
-                <span className="ml-auto rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-black text-accent">
-                  {userXP} XP
-                </span>
-              )}
             </div>
           )}
 

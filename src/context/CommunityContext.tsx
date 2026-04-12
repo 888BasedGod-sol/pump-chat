@@ -58,6 +58,7 @@ export interface Raid {
   engagedRT: boolean;
   engagedReply: boolean;
   participants: number; // unique engagers
+  engagers: Record<string, string[]>; // { "@user": ["like","retweet","reply"] }
   warCry?: string; // rally message from raid creator
 }
 
@@ -513,6 +514,12 @@ export function CommunityProvider({
           r.engagedReply;
         if (already) return r;
         const isFirstEngagement = !r.engagedLike && !r.engagedRT && !r.engagedReply;
+        // Update engagers map
+        const prevTypes = r.engagers[username] ?? [];
+        const updatedEngagers = {
+          ...r.engagers,
+          [username]: [...prevTypes, type],
+        };
         return {
           ...r,
           likes: type === "like" ? r.likes + 1 : r.likes,
@@ -522,6 +529,7 @@ export function CommunityProvider({
           engagedRT: type === "retweet" ? true : r.engagedRT,
           engagedReply: type === "reply" ? true : r.engagedReply,
           participants: isFirstEngagement ? r.participants + 1 : r.participants,
+          engagers: updatedEngagers,
         };
       })
     );
@@ -598,6 +606,7 @@ export function CommunityProvider({
       engagedRT: false,
       engagedReply: false,
       participants: 0,
+      engagers: {},
       warCry: warCry || undefined,
     };
     setRaids((prev) => [newRaid, ...prev]);

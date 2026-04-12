@@ -14,16 +14,25 @@ export async function GET(request: Request) {
   const user = searchParams.get("user");
 
   const rows = await db.select().from(raids).orderBy(desc(raids.createdAt)).limit(100).all();
+  const raidIds = rows.map((r) => r.id);
 
-  // If a user is provided, batch-fetch their engagements for all returned raids
-  let userEngagements: Set<string> | undefined;
-  if (user) {
-    const userRows = await db
-      .select()
-      .from(engagements)
-      .where(eq(engagements.user, user))
-      .all();
-    userEngagements = new Set(userRows.map((e) => `${e.raidId}:${e.type}`));
+  // Batch-fetch all engagements for these raids
+  const allEngagementRows = raidIds.length > 0
+    ? await db.select().from(engagements).all()
+    : [];
+  // Build per-raid engagers map and per-user engagement set
+  const raidEngagers: Record<number, Record<string, string[]>> = {};
+  const userEngagements = new Set<string>();
+  for (const e of allEngagementRows) {
+    if (!raidIds.includes(e.raidId)) continue;
+    // Build engagers map: { raidId: { "@user": ["like", "retweet"] } }
+    if (!raidEngagers[e.raidId]) raidEngagers[e.raidId] = {};
+    if (!raidEngagers[e.raidId][e.user]) raidEngagers[e.raidId][e.user] = [];
+    raidEngagers[e.raidId][e.user].push(e.type);
+    // Build per-user set for the requesting user
+    if (user && e.user === user) {
+      userEngagements.add(`${e.raidId}:${e.type}`);
+    }
   }
 
   const mapped = rows.map((r) => ({
@@ -42,9 +51,10 @@ export async function GET(request: Request) {
     target: { likes: r.targetLikes, retweets: r.targetRetweets, replies: r.targetReplies },
     participants: r.participants,
     createdAt: r.createdAt,
-    engagedLike: userEngagements?.has(`${r.id}:like`) ?? false,
-    engagedRT: userEngagements?.has(`${r.id}:retweet`) ?? false,
-    engagedReply: userEngagements?.has(`${r.id}:reply`) ?? false,
+    engagedLike: userEngagements.has(`${r.id}:like`),
+    engagedRT: userEngagements.has(`${r.id}:retweet`),
+    engagedReply: userEngagements.has(`${r.id}:reply`),
+    engagers: raidEngagers[r.id] ?? {},
     warCry: r.warCry ?? undefined,
   }));
   return NextResponse.json(mapped);
