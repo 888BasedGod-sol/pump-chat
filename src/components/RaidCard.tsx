@@ -425,8 +425,8 @@ export default function RaidCard({
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(raid.engagers).slice(0, 12).map(([engager, types]) => (
-                  <div key={engager} className="flex items-center gap-1 rounded-md bg-background/60 border border-border/40 px-1.5 py-0.5">
-                    <span className="text-[9px] font-bold text-text-primary truncate max-w-[80px]">{engager}</span>
+                  <a key={engager} href={`https://x.com/${engager.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-md bg-background/60 border border-border/40 px-1.5 py-0.5 hover:border-accent/40 hover:bg-accent/5 transition-colors">
+                    <span className="text-[9px] font-bold text-text-primary truncate max-w-[80px] hover:text-accent">{engager}</span>
                     <div className="flex items-center gap-0.5">
                       {types.includes("like") && (
                         <svg className="h-2.5 w-2.5 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
@@ -444,7 +444,7 @@ export default function RaidCard({
                         </svg>
                       )}
                     </div>
-                  </div>
+                  </a>
                 ))}
                 {Object.keys(raid.engagers).length > 12 && (
                   <span className="text-[9px] text-text-muted self-center">+{Object.keys(raid.engagers).length - 12} more</span>
