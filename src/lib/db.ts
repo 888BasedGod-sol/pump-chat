@@ -73,6 +73,12 @@ function initDb() {
       raid_id INTEGER NOT NULL,
       at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS community_members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      community_ticker TEXT NOT NULL,
+      user TEXT NOT NULL,
+      joined_at INTEGER NOT NULL
+    );
 
     CREATE INDEX IF NOT EXISTS idx_engagements_raid_user_type ON engagements(raid_id, user, type);
     CREATE INDEX IF NOT EXISTS idx_engagements_raid_user ON engagements(raid_id, user);
@@ -82,6 +88,8 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_raids_community ON raids(community);
     CREATE INDEX IF NOT EXISTS idx_community_owners_ticker ON community_owners(community_ticker);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_community_owners_unique ON community_owners(community_ticker, x_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members_unique ON community_members(community_ticker, user);
+    CREATE INDEX IF NOT EXISTS idx_community_members_ticker ON community_members(community_ticker);
   `).catch((err) => {
     console.warn("DB init warning (may be normal during build):", err.message);
   });

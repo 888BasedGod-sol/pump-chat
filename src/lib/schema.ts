@@ -64,3 +64,10 @@ export const engagements = sqliteTable("engagements", {
   raidId: integer("raid_id").notNull(),
   at: integer("at").notNull(),
 });
+
+export const communityMembers = sqliteTable("community_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  communityTicker: text("community_ticker").notNull(),
+  user: text("user").notNull(), // @handle
+  joinedAt: integer("joined_at").notNull(),
+});

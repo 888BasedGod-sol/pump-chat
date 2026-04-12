@@ -170,6 +170,7 @@ interface CommunityCtx {
   leaderboardPeriod: "24h" | "7d" | "all";
   leaderboardMode: "communities" | "users";
   searchQuery: string;
+  joinedCommunities: Set<string>; // tickers the current user has joined
 
   /* identity */
   username: string;
@@ -190,6 +191,8 @@ interface CommunityCtx {
   getMintForCommunity: (communityName: string) => string | null;
   setSearchQuery: (q: string) => void;
   syncTokenCommunities: (tokens: Array<{ address: string; name: string; symbol: string; image?: string; marketCapSol?: number; progressPercent?: number; complete?: boolean; realSolReserves?: number; tokenTotalSupply?: string; priceUsd?: number | null; priceChange24h?: number | null; volume24h?: number | null; liquidity?: number | null; fdv?: number | null; pairUrl?: string | null; txns24h?: { buys: number; sells: number } | null; createdAt?: number | null }>) => void;
+  joinCommunity: (ticker: string) => Promise<void>;
+  leaveCommunity: (ticker: string) => Promise<void>;
 }
 
 const CommunityContext = createContext<CommunityCtx | null>(null);
@@ -231,6 +234,7 @@ export function CommunityProvider({
   const [nextMsgId, setNextMsgId] = useState(1);
   const [nextRaidId, setNextRaidId] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [joinedCommunities, setJoinedCommunities] = useState<Set<string>>(new Set());
   const communitiesLoaded = useRef(false);
   const lastEngageRef = useRef(0); // timestamp of last engagement, used to skip polls during PATCH
 
@@ -268,6 +272,21 @@ export function CommunityProvider({
         }
         if (Array.isArray(engRes) && engRes.length > 0) {
           setEngagements(engRes);
+        }
+
+        // Fetch which communities the user has joined
+        if (username !== "anon") {
+          try {
+            const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`);
+            if (joinedRes.ok) {
+              const tickers: string[] = await joinedRes.json();
+              if (Array.isArray(tickers)) {
+                setJoinedCommunities(new Set(tickers));
+              }
+            }
+          } catch {
+            // ignore
+          }
         }
       } catch {
         // hydration failed — app works with empty state
@@ -658,6 +677,98 @@ export function CommunityProvider({
     ]);
   }, [communities]);
 
+  /* -- join community --------------------------------------------- */
+  const joinCommunity = useCallback(async (ticker: string) => {
+    // Optimistic update
+    setJoinedCommunities((prev) => new Set(prev).add(ticker));
+    setCommunities((prev) =>
+      prev.map((c) => c.ticker === ticker ? { ...c, members: c.members + 1 } : c)
+    );
+
+    try {
+      const token = await getAccessToken?.();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch("/api/communities/join", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ticker }),
+      });
+      if (!res.ok) {
+        // Revert optimistic update
+        setJoinedCommunities((prev) => {
+          const next = new Set(prev);
+          next.delete(ticker);
+          return next;
+        });
+        setCommunities((prev) =>
+          prev.map((c) => c.ticker === ticker ? { ...c, members: Math.max(0, c.members - 1) } : c)
+        );
+      } else {
+        const data = await res.json();
+        if (typeof data.members === "number") {
+          setCommunities((prev) =>
+            prev.map((c) => c.ticker === ticker ? { ...c, members: data.members } : c)
+          );
+        }
+      }
+    } catch {
+      // Revert on network error
+      setJoinedCommunities((prev) => {
+        const next = new Set(prev);
+        next.delete(ticker);
+        return next;
+      });
+      setCommunities((prev) =>
+        prev.map((c) => c.ticker === ticker ? { ...c, members: Math.max(0, c.members - 1) } : c)
+      );
+    }
+  }, [getAccessToken]);
+
+  /* -- leave community -------------------------------------------- */
+  const leaveCommunity = useCallback(async (ticker: string) => {
+    // Optimistic update
+    setJoinedCommunities((prev) => {
+      const next = new Set(prev);
+      next.delete(ticker);
+      return next;
+    });
+    setCommunities((prev) =>
+      prev.map((c) => c.ticker === ticker ? { ...c, members: Math.max(0, c.members - 1) } : c)
+    );
+
+    try {
+      const token = await getAccessToken?.();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch("/api/communities/join", {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({ ticker }),
+      });
+      if (!res.ok) {
+        // Revert
+        setJoinedCommunities((prev) => new Set(prev).add(ticker));
+        setCommunities((prev) =>
+          prev.map((c) => c.ticker === ticker ? { ...c, members: c.members + 1 } : c)
+        );
+      } else {
+        const data = await res.json();
+        if (typeof data.members === "number") {
+          setCommunities((prev) =>
+            prev.map((c) => c.ticker === ticker ? { ...c, members: data.members } : c)
+          );
+        }
+      }
+    } catch {
+      // Revert
+      setJoinedCommunities((prev) => new Set(prev).add(ticker));
+      setCommunities((prev) =>
+        prev.map((c) => c.ticker === ticker ? { ...c, members: c.members + 1 } : c)
+      );
+    }
+  }, [getAccessToken]);
+
   /* -- bulk-sync communities from token feed ---------------------- */
   const syncTokenCommunities = useCallback(
     (tokens: Array<{ address: string; name: string; symbol: string; image?: string; marketCapSol?: number; progressPercent?: number; complete?: boolean; realSolReserves?: number; tokenTotalSupply?: string; priceUsd?: number | null; priceChange24h?: number | null; volume24h?: number | null; liquidity?: number | null; fdv?: number | null; pairUrl?: string | null; txns24h?: { buys: number; sells: number } | null; createdAt?: number | null }>) => {
@@ -774,6 +885,7 @@ export function CommunityProvider({
         leaderboardPeriod,
         leaderboardMode,
         searchQuery,
+        joinedCommunities,
         username,
         isSignedIn,
         isLoading,
@@ -788,6 +900,8 @@ export function CommunityProvider({
         getMintForCommunity,
         setSearchQuery,
         syncTokenCommunities,
+        joinCommunity,
+        leaveCommunity,
       }}
     >
       {children}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 
 export default function Sidebar() {
-  const { communities, selectedCommunity, selectCommunity, raids, addCommunity, searchQuery, setSearchQuery } = useCommunity();
+  const { communities, selectedCommunity, selectCommunity, raids, addCommunity, searchQuery, setSearchQuery, joinedCommunities } = useCommunity();
   const [showAdd, setShowAdd] = useState(false);
   const [newTicker, setNewTicker] = useState("");
   const [newMint, setNewMint] = useState("");
@@ -67,7 +67,10 @@ export default function Sidebar() {
                 <p className="truncate text-xs font-medium text-text-primary">
                   {c.name}
                 </p>
-                <p className="text-[10px] text-text-muted">{c.members} member{c.members !== 1 ? "s" : ""}</p>
+                <p className="text-[10px] text-text-muted">
+                  {c.members} member{c.members !== 1 ? "s" : ""}
+                  {joinedCommunities.has(c.ticker) && <span className="text-accent"> · joined</span>}
+                </p>
               </div>
               {c.active && (
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />

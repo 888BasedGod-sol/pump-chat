@@ -24,7 +24,7 @@ function fmtCompact(n: number | null | undefined): string {
 
 export default function CommunityPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = use(params);
-  const { communities, selectCommunity, communityLeaders, messages, raids } = useCommunity();
+  const { communities, selectCommunity, communityLeaders, messages, raids, joinedCommunities, joinCommunity, leaveCommunity, isSignedIn } = useCommunity();
 
   const [mobileTab, setMobileTab] = useState<"raids" | "chat">("raids");
   const community = communities.find((c) => c.ticker === ticker);
@@ -148,6 +148,9 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
                 )}
                 <span><span className="text-text-secondary font-bold">{msgCount}</span> msgs</span>
                 <span><span className="text-text-secondary font-bold">{raidCount}</span> raids</span>
+                {community.members > 0 && (
+                  <span><span className="text-text-secondary font-bold">{community.members}</span> members</span>
+                )}
                 {leader && leader.score > 0 && (
                   <span><span className="text-accent font-bold">{leader.score}</span> pts</span>
                 )}
@@ -165,6 +168,25 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
                 </div>
                 <span className="text-[10px] font-bold text-accent">{community.progressPercent}%</span>
               </div>
+            )}
+
+            {/* Join / Leave button */}
+            {isSignedIn && (
+              joinedCommunities.has(community.ticker) ? (
+                <button
+                  onClick={() => leaveCommunity(community.ticker)}
+                  className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-[10px] font-bold text-text-muted transition-colors hover:border-danger hover:text-danger"
+                >
+                  Joined
+                </button>
+              ) : (
+                <button
+                  onClick={() => joinCommunity(community.ticker)}
+                  className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-[10px] font-bold text-background transition-colors hover:bg-accent-hover"
+                >
+                  Join
+                </button>
+              )
             )}
           </div>
         </div>
