@@ -46,13 +46,6 @@ export const communityBulkSchema = z.object({
   ).min(1).max(100),
 });
 
-export const raidVerifySchema = z.object({
-  wallet: solanaAddress,
-  mint: solanaAddress,
-  raidId: z.number().int().positive(),
-  type: z.enum(["like", "retweet", "reply"]),
-});
-
 export const balanceQuerySchema = z.object({
   wallet: solanaAddress,
   mint: solanaAddress,

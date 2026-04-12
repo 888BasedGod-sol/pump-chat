@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useState, useEffect, useMemo } from "react";
 import { useCommunity } from "@/context/CommunityContext";
-import { isRaidActive, getRaidStatus, parseTweetUrl } from "@/context/CommunityContext";
+import { getRaidStatus, parseTweetUrl } from "@/context/CommunityContext";
 import RaidCard from "@/components/RaidCard";
 
 type RaidTab = "active" | "completed" | "expired";
 
 export default function RaidPanel() {
   const { raids, engageRaid, selectedCommunity, createRaid, communities } = useCommunity();
-  const { publicKey, connected } = useWallet();
   const [showCreate, setShowCreate] = useState(false);
   const [tweetUrl, setTweetUrl] = useState("");
   const [urlError, setUrlError] = useState("");
@@ -21,10 +19,6 @@ export default function RaidPanel() {
   const [warCry, setWarCry] = useState("");
   const [activeTab, setActiveTab] = useState<RaidTab>("active");
   const [expandedRaid, setExpandedRaid] = useState<number | null>(null);
-
-  // Track verification status per raid
-  const [verifiedRaids, setVerifiedRaids] = useState<Record<number, boolean | null>>({});
-  const [checkingRaid, setCheckingRaid] = useState<number | null>(null);
 
   // Tick every 15s to update countdown timers
   const [, setTick] = useState(0);
@@ -88,49 +82,6 @@ export default function RaidPanel() {
     setShowTargets(false);
     setShowCreate(false);
   };
-
-  // Verify token holdings server-side before allowing raid engagement
-  const verifyAndEngage = useCallback(
-    async (raidId: number, type: "like" | "retweet" | "reply") => {
-      if (!connected || !publicKey) return;
-
-      const raid = raids.find((r) => r.id === raidId);
-      if (!raid?.mint) return;
-
-      // Already verified for this raid
-      if (verifiedRaids[raidId] === true) {
-        engageRaid(raidId, type);
-        return;
-      }
-
-      setCheckingRaid(raidId);
-      try {
-        const res = await fetch("/api/raid/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            wallet: publicKey.toBase58(),
-            mint: raid.mint,
-            raidId,
-            type,
-          }),
-        });
-        const data = await res.json();
-
-        if (data.verified) {
-          setVerifiedRaids((prev) => ({ ...prev, [raidId]: true }));
-          engageRaid(raidId, type);
-        } else {
-          setVerifiedRaids((prev) => ({ ...prev, [raidId]: false }));
-        }
-      } catch {
-        setVerifiedRaids((prev) => ({ ...prev, [raidId]: false }));
-      } finally {
-        setCheckingRaid(null);
-      }
-    },
-    [connected, publicKey, raids, verifiedRaids, engageRaid]
-  );
 
   // Parse URL on change for live preview
   const parsedPreview = parseTweetUrl(tweetUrl);
@@ -398,10 +349,7 @@ export default function RaidPanel() {
           <RaidCard
             key={raid.id}
             raid={raid}
-            connected={connected}
-            verified={verifiedRaids[raid.id] ?? null}
-            checking={checkingRaid === raid.id}
-            onEngage={verifyAndEngage}
+            onEngage={engageRaid}
             expanded={expandedRaid === raid.id}
             onToggleExpand={() =>
               setExpandedRaid((prev) => (prev === raid.id ? null : raid.id))

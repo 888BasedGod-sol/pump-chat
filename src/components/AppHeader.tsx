@@ -2,17 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePrivySafe } from "@/hooks/usePrivySafe";
-import { useWallet } from "@solana/wallet-adapter-react";
 import Image from "next/image";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useCommunity } from "@/context/CommunityContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function AppHeader() {
   const { ready, authenticated, user, login, logout } = usePrivySafe();
-  const { publicKey, connected, disconnect } = useWallet();
-  const { setVisible } = useWalletModal();
   const { searchQuery, setSearchQuery } = useCommunity();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -29,7 +25,6 @@ export default function AppHeader() {
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  const shortenKey = (key: string) => `${key.slice(0, 4)}...${key.slice(-4)}`;
   const xUsername = user?.twitter?.username;
 
   const isActive = (path: string) => pathname === path;
@@ -96,24 +91,6 @@ export default function AppHeader() {
             >
               <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               sign in with X
-            </button>
-          )}
-          {/* Wallet — secondary, for ownership claims */}
-          {connected && publicKey ? (
-            <button
-              onClick={disconnect}
-              className="rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium text-text-secondary transition-colors hover:border-accent hover:text-accent"
-              title={publicKey.toBase58()}
-            >
-              {shortenKey(publicKey.toBase58())}
-            </button>
-          ) : (
-            <button
-              onClick={() => setVisible(true)}
-              className="hidden rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium text-text-muted transition-colors hover:border-accent hover:text-accent sm:block"
-              title="Connect wallet to claim community ownership"
-            >
-              wallet
             </button>
           )}
         </div>

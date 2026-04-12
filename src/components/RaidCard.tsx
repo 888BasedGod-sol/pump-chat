@@ -48,9 +48,6 @@ function XpFloat({ amount }: { amount: number }) {
 
 interface RaidCardProps {
   raid: Raid;
-  connected: boolean;
-  verified: boolean | null;
-  checking: boolean;
   onEngage: (raidId: number, type: "like" | "retweet" | "reply") => void;
   expanded: boolean;
   onToggleExpand: () => void;
@@ -58,9 +55,6 @@ interface RaidCardProps {
 
 export default function RaidCard({
   raid,
-  connected,
-  verified,
-  checking,
   onEngage,
   expanded,
   onToggleExpand,
@@ -272,11 +266,7 @@ export default function RaidCard({
       {/* ── Quick action bar (always visible for active raids) ── */}
       {isActive && !expanded && (
         <div className="px-4 pb-3 pl-16 flex items-center gap-2">
-          {!connected ? (
-            <span className="text-[10px] text-warning">connect to X to participate</span>
-          ) : verified === false ? (
-            <span className="text-[10px] text-danger">must hold ${raid.community} to raid</span>
-          ) : allDone ? (
+          {allDone ? (
             <div className="flex items-center gap-2 flex-1">
               <span className="text-[10px] text-accent font-bold">all done! {userXP} XP earned</span>
               <a
@@ -292,7 +282,7 @@ export default function RaidCard({
             <>
               <button
                 onClick={() => openIntent(raid.id, "like")}
-                disabled={raid.engagedLike || checking}
+                disabled={raid.engagedLike}
                 className={`raid-action-pill ${raid.engagedLike ? "raid-action-done text-pink-400 bg-pink-500/15" : "text-pink-400 bg-pink-500/8 hover:bg-pink-500/20"}`}
               >
                 <svg className="h-3.5 w-3.5" fill={raid.engagedLike ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -302,7 +292,7 @@ export default function RaidCard({
               </button>
               <button
                 onClick={() => openIntent(raid.id, "retweet")}
-                disabled={raid.engagedRT || checking}
+                disabled={raid.engagedRT}
                 className={`raid-action-pill ${raid.engagedRT ? "raid-action-done text-accent bg-accent/15" : "text-accent bg-accent/8 hover:bg-accent/20"}`}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -312,7 +302,7 @@ export default function RaidCard({
               </button>
               <button
                 onClick={() => openIntent(raid.id, "reply")}
-                disabled={raid.engagedReply || checking}
+                disabled={raid.engagedReply}
                 className={`raid-action-pill ${raid.engagedReply ? "raid-action-done text-blue-400 bg-blue-500/15" : "text-blue-400 bg-blue-500/8 hover:bg-blue-500/20"}`}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -322,10 +312,9 @@ export default function RaidCard({
               </button>
               <button
                 onClick={handleRaidAll}
-                disabled={checking}
                 className="ml-auto rounded-lg bg-accent px-3 py-1.5 text-[10px] font-black text-background hover:bg-accent-hover transition-all active:scale-95 shadow-md shadow-accent/20 hover:shadow-lg hover:shadow-accent/30 hover:-translate-y-0.5"
               >
-                {checking ? "..." : "RAID ALL"}
+                RAID ALL
               </button>
             </>
           )}
@@ -447,19 +436,15 @@ export default function RaidCard({
           {/* Action buttons in expanded view */}
           {isActive && (
             <div className="flex items-center gap-2">
-              {!connected ? (
-                <span className="text-[11px] text-warning font-medium">connect to X to participate</span>
-              ) : verified === false ? (
-                <span className="text-[11px] text-danger font-medium">must hold ${raid.community} to participate</span>
-              ) : allDone ? (
+              {allDone ? (
                 <span className="text-[11px] text-accent font-bold">all actions completed! {userXP} XP earned</span>
               ) : (
                 <>
                   <button
                     onClick={() => openIntent(raid.id, "like")}
-                    disabled={raid.engagedLike || checking}
+                    disabled={raid.engagedLike}
                     className={`group/btn flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95 ${
-                      raid.engagedLike ? "bg-pink-500/20 text-pink-400" : checking ? "bg-surface-hover text-text-muted cursor-wait" : "bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 hover:shadow-md hover:shadow-pink-500/10 hover:-translate-y-0.5"
+                      raid.engagedLike ? "bg-pink-500/20 text-pink-400" : "bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 hover:shadow-md hover:shadow-pink-500/10 hover:-translate-y-0.5"
                     }`}
                   >
                     <svg className={`h-4 w-4 ${raid.engagedLike ? "animate-engage-pop" : "group-hover/btn:scale-110 transition-transform"}`} fill={raid.engagedLike ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -469,9 +454,9 @@ export default function RaidCard({
                   </button>
                   <button
                     onClick={() => openIntent(raid.id, "retweet")}
-                    disabled={raid.engagedRT || checking}
+                    disabled={raid.engagedRT}
                     className={`group/btn flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95 ${
-                      raid.engagedRT ? "bg-accent/20 text-accent" : checking ? "bg-surface-hover text-text-muted cursor-wait" : "bg-accent/10 text-accent hover:bg-accent/20 hover:shadow-md hover:shadow-accent/10 hover:-translate-y-0.5"
+                      raid.engagedRT ? "bg-accent/20 text-accent" : "bg-accent/10 text-accent hover:bg-accent/20 hover:shadow-md hover:shadow-accent/10 hover:-translate-y-0.5"
                     }`}
                   >
                     <svg className={`h-4 w-4 ${raid.engagedRT ? "animate-engage-pop" : "group-hover/btn:scale-110 transition-transform"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -481,9 +466,9 @@ export default function RaidCard({
                   </button>
                   <button
                     onClick={() => openIntent(raid.id, "reply")}
-                    disabled={raid.engagedReply || checking}
+                    disabled={raid.engagedReply}
                     className={`group/btn flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95 ${
-                      raid.engagedReply ? "bg-blue-500/20 text-blue-400" : checking ? "bg-surface-hover text-text-muted cursor-wait" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:shadow-md hover:shadow-blue-500/10 hover:-translate-y-0.5"
+                      raid.engagedReply ? "bg-blue-500/20 text-blue-400" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:shadow-md hover:shadow-blue-500/10 hover:-translate-y-0.5"
                     }`}
                   >
                     <svg className={`h-4 w-4 ${raid.engagedReply ? "animate-engage-pop" : "group-hover/btn:scale-110 transition-transform"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

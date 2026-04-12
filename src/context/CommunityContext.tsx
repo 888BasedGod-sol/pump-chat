@@ -203,26 +203,20 @@ export function useCommunity() {
 /*  Provider                                                           */
 /* ------------------------------------------------------------------ */
 
-function shortenWallet(pubkey: string): string {
-  return `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}`;
-}
-
 export function CommunityProvider({
   children,
   xUsername,
   xId,
-  walletAddress,
   getAccessToken,
 }: {
   children: ReactNode;
   xUsername?: string | null;
   xId?: string | null;
-  walletAddress?: string | null;
   getAccessToken?: () => Promise<string | null>;
 }) {
-  // X account is primary identity; fall back to wallet, then anon
+  // X account is primary identity; fall back to anon
   const isSignedIn = !!xUsername;
-  const username = xUsername ? `@${xUsername}` : walletAddress ? shortenWallet(walletAddress) : "anon";
+  const username = xUsername ? `@${xUsername}` : "anon";
   const [communities, setCommunities] = useState<Community[]>(SEED_COMMUNITIES);
   const [selectedCommunity, setSelectedCommunity] = useState("all");
   const [messages, setMessages] = useState<ChatMessage[]>(SEED_MESSAGES);
