@@ -13,12 +13,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const user = searchParams.get("user");
 
-  const rows = db.select().from(raids).orderBy(desc(raids.createdAt)).limit(100).all();
+  const rows = await db.select().from(raids).orderBy(desc(raids.createdAt)).limit(100).all();
 
   // If a user is provided, batch-fetch their engagements for all returned raids
   let userEngagements: Set<string> | undefined;
   if (user) {
-    const userRows = db
+    const userRows = await db
       .select()
       .from(engagements)
       .where(eq(engagements.user, user))
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
   }
 
   // Validate the raid's community exists
-  const result = db
+  const result = await db
     .insert(raids)
     .values({
       community,
@@ -147,13 +147,13 @@ export async function PATCH(request: Request) {
   const { raidId, type, user } = parsed.data;
 
   // Validate raid exists
-  const raid = db.select().from(raids).where(eq(raids.id, raidId)).get();
+  const raid = await db.select().from(raids).where(eq(raids.id, raidId)).get();
   if (!raid) {
     return NextResponse.json({ error: "Raid not found" }, { status: 404 });
   }
 
   // Check for duplicate engagement using targeted WHERE clause (not full table scan)
-  const existing = db
+  const existing = await db
     .select()
     .from(engagements)
     .where(
@@ -170,12 +170,12 @@ export async function PATCH(request: Request) {
   }
 
   // Record engagement
-  db.insert(engagements)
+  await db.insert(engagements)
     .values({ user, type, raidId, at: Date.now() })
     .run();
 
   // Count engagements for this user on this raid to determine if first
-  const userEngagementCount = db
+  const userEngagementRows = await db
     .select()
     .from(engagements)
     .where(
@@ -184,7 +184,8 @@ export async function PATCH(request: Request) {
         eq(engagements.user, user)
       )
     )
-    .all().length;
+    .all();
+  const userEngagementCount = userEngagementRows.length;
 
   const updates: Record<string, number> = {};
   if (type === "like") updates.likes = raid.likes + 1;
@@ -192,7 +193,7 @@ export async function PATCH(request: Request) {
   if (type === "reply") updates.replies = raid.replies + 1;
   if (userEngagementCount === 1) updates.participants = raid.participants + 1;
 
-  db.update(raids).set(updates).where(eq(raids.id, raidId)).run();
+  await db.update(raids).set(updates).where(eq(raids.id, raidId)).run();
 
   return NextResponse.json({ ok: true });
 }

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@nirholas/pump-sdk", "@coral-xyz/anchor", "bn.js", "better-sqlite3"],
+  serverExternalPackages: ["@nirholas/pump-sdk", "@coral-xyz/anchor", "bn.js"],
   async headers() {
     return [
       {

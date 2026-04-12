@@ -6,6 +6,6 @@ export const dynamic = "force-dynamic";
 
 // GET — list engagements for leaderboard computation
 export async function GET() {
-  const rows = db.select().from(engagements).all();
+  const rows = await db.select().from(engagements).all();
   return NextResponse.json(rows);
 }

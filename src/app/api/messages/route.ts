@@ -10,13 +10,13 @@ export const dynamic = "force-dynamic";
 
 // GET — list messages (newest last for chat order, limited to recent 200)
 export async function GET() {
-  const rows = db
+  const rows = (await db
     .select()
     .from(messages)
     .orderBy(desc(messages.createdAt))
     .limit(200)
     .all()
-    .reverse(); // oldest first for chat display order
+  ).reverse(); // oldest first for chat display order
 
   const mapped = rows.map((m) => ({
     id: m.id,
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   }
   const { user, msg, community } = parsed.data;
 
-  const result = db
+  const result = await db
     .insert(messages)
     .values({
       user,

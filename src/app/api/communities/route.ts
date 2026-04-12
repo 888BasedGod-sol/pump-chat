@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 // GET — list all communities
 export async function GET() {
-  const rows = db.select().from(communities).all();
+  const rows = await db.select().from(communities).all();
   return NextResponse.json(rows);
 }
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   let inserted = 0;
   for (const item of items) {
     try {
-      db.insert(communities)
+      await db.insert(communities)
         .values({
           ticker: item.ticker,
           name: item.name || `$${item.ticker}`,

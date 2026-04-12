@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "ticker param required" }, { status: 400 });
   }
 
-  const owners = db
+  const owners = await db
     .select()
     .from(communityOwners)
     .where(eq(communityOwners.communityTicker, ticker))
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   const { communityTicker, walletAddress } = parsed.data;
 
   // Check community exists
-  const comm = db
+  const comm = await db
     .select()
     .from(communities)
     .where(eq(communities.ticker, communityTicker))
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   }
 
   // Check not already claimed by someone else
-  const existing = db
+  const existing = await db
     .select()
     .from(communityOwners)
     .where(eq(communityOwners.communityTicker, communityTicker))
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     // Upsert ownership
     if (existing) {
       // Already owned by this user — update wallet
-      db.update(communityOwners)
+      await db.update(communityOwners)
         .set({ walletAddress, claimedAt: Date.now() })
         .where(and(
           eq(communityOwners.communityTicker, communityTicker),
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
         ))
         .run();
     } else {
-      db.insert(communityOwners)
+      await db.insert(communityOwners)
         .values({
           communityTicker,
           xId,
