@@ -2,7 +2,6 @@
 
 import { useMemo, useEffect, useState, useCallback } from "react";
 import { useCommunity } from "@/context/CommunityContext";
-import ErrorBoundary from "@/components/ErrorBoundary";
 import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,18 +45,26 @@ function timeAgo(ts: number | null | undefined): string {
   return `${days}d ago`;
 }
 
+type FilterTab = "all" | "graduated" | "bonding" | "joined";
+type SortOption = "active" | "mcap" | "newest" | "members";
+
 export default function CommunitiesPage() {
   const { communities, messages, raids, communityLeaders, searchQuery, isLoading, joinedCommunities } = useCommunity();
   const router = useRouter();
   const [lookingUp, setLookingUp] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("active");
 
   // Detect Solana address (base58, 32-50 chars)
   const isSolanaAddress = useCallback((q: string) => /^[1-9A-HJ-NP-Za-km-z]{32,50}$/.test(q.trim()), []);
 
+  // Reset lookup error when search changes
+  useEffect(() => { setLookupError(""); }, [searchQuery]);
+
   // Build stats per community
   const communityStats = useMemo(() => {
     const stats = new Map<string, { messages: number; raids: number; participants: Set<string> }>();
-
     for (const m of messages) {
       if (!stats.has(m.community)) stats.set(m.community, { messages: 0, raids: 0, participants: new Set() });
       stats.get(m.community)!.messages++;
@@ -67,19 +74,15 @@ export default function CommunitiesPage() {
       if (!stats.has(r.community)) stats.set(r.community, { messages: 0, raids: 0, participants: new Set() });
       stats.get(r.community)!.raids++;
     }
-
     return stats;
   }, [messages, raids]);
 
+  // Enrich, filter, sort
   const enriched = useMemo(() => {
     const MIN_MCAP_USD = 3000;
+    const q = searchQuery?.toLowerCase() ?? "";
 
     return communities
-      .filter((c) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q) || c.mint.toLowerCase().includes(q);
-      })
       .map((c) => {
         const s = communityStats.get(c.name);
         const leader = communityLeaders.find((l) => l.ticker === c.ticker);
@@ -93,40 +96,92 @@ export default function CommunitiesPage() {
         };
       })
       .filter((c) => {
-        // Skip mcap filter when user is actively searching
-        if (searchQuery) return true;
-        // Always show communities with activity or that the user joined
-        if (c.msgCount > 0 || c.raidCount > 0 || c.members > 0) return true;
-        if (joinedCommunities.has(c.ticker)) return true;
-        // Otherwise require minimum market cap
-        if (c.fdv != null && c.fdv >= MIN_MCAP_USD) return true;
-        // Rough SOL→USD estimate (~$150/SOL) for communities only having SOL mcap
-        if (c.marketCapSol != null && c.marketCapSol * 150 >= MIN_MCAP_USD) return true;
-        return false;
+        // Text search
+        if (q) {
+          const match = c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q) || c.mint.toLowerCase().includes(q);
+          if (!match) return false;
+        }
+        // Tab filter
+        if (filterTab === "graduated" && !c.complete) return false;
+        if (filterTab === "bonding" && c.complete !== false) return false;
+        if (filterTab === "joined" && !joinedCommunities.has(c.ticker)) return false;
+        // Min mcap gate (skip when searching or on "joined" tab)
+        if (!q && filterTab !== "joined") {
+          if (c.msgCount > 0 || c.raidCount > 0 || c.members > 0) return true;
+          if (joinedCommunities.has(c.ticker)) return true;
+          if (c.fdv != null && c.fdv >= MIN_MCAP_USD) return true;
+          if (c.marketCapSol != null && c.marketCapSol * 150 >= MIN_MCAP_USD) return true;
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "mcap":
+            return (b.fdv ?? b.marketCapSol ?? 0) - (a.fdv ?? a.marketCapSol ?? 0);
+          case "newest":
+            return (b.tokenCreatedAt ?? 0) - (a.tokenCreatedAt ?? 0);
+          case "members":
+            return b.members - a.members;
+          case "active":
+          default:
+            return b.score - a.score || b.msgCount - a.msgCount || b.raidCount - a.raidCount || b.members - a.members;
+        }
       });
-  }, [communities, communityStats, communityLeaders, searchQuery, joinedCommunities]);
+  }, [communities, communityStats, communityLeaders, searchQuery, joinedCommunities, filterTab, sortBy]);
 
-  const mostActive = useMemo(() => {
-    return [...enriched]
-      .filter((c) => c.score > 0 || c.msgCount > 0 || c.raidCount > 0)
-      .sort((a, b) => b.score - a.score || b.msgCount - a.msgCount)
-      .slice(0, 6);
-  }, [enriched]);
+  // Contract address detection
+  const searchIsAddress = searchQuery ? isSolanaAddress(searchQuery) : false;
+  const hasLocalMatch = searchIsAddress && enriched.length > 0;
 
-  // Auto-lookup: when searching a Solana address with no local match, look it up on-chain
-  useEffect(() => {
-    if (!searchQuery || !isSolanaAddress(searchQuery) || enriched.length > 0 || lookingUp) return;
-    let cancelled = false;
+  const handleLookup = useCallback(() => {
+    if (!searchQuery || lookingUp) return;
+    setLookupError("");
     setLookingUp(true);
     fetch(`/api/communities/lookup?mint=${encodeURIComponent(searchQuery.trim())}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (cancelled || !data?.ticker) return;
-        router.push(`/app/community/${data.ticker}`);
+      .then((res) => {
+        if (!res.ok) throw new Error("not found");
+        return res.json();
       })
-      .finally(() => { if (!cancelled) setLookingUp(false); });
-    return () => { cancelled = true; };
-  }, [searchQuery, enriched.length, isSolanaAddress, lookingUp, router]);
+      .then((data) => {
+        if (data?.ticker) router.push(`/app/community/${data.ticker}`);
+        else setLookupError("Token not found on-chain");
+      })
+      .catch(() => setLookupError("Could not find this token"))
+      .finally(() => setLookingUp(false));
+  }, [searchQuery, lookingUp, router]);
+
+  // Auto-trigger lookup for addresses with no local match
+  useEffect(() => {
+    if (searchIsAddress && !hasLocalMatch && !lookingUp && !lookupError) {
+      handleLookup();
+    }
+  }, [searchIsAddress, hasLocalMatch, lookingUp, lookupError, handleLookup]);
+
+  // Tab counts
+  const tabCounts = useMemo(() => {
+    let graduated = 0, bonding = 0, joined = 0;
+    for (const c of communities) {
+      if (c.complete) graduated++;
+      if (c.complete === false) bonding++;
+      if (joinedCommunities.has(c.ticker)) joined++;
+    }
+    return { graduated, bonding, joined };
+  }, [communities, joinedCommunities]);
+
+  const filterTabs: { key: FilterTab; label: string; count?: number }[] = [
+    { key: "all", label: "all" },
+    { key: "graduated", label: "graduated", count: tabCounts.graduated },
+    { key: "bonding", label: "bonding", count: tabCounts.bonding },
+    { key: "joined", label: "joined", count: tabCounts.joined },
+  ];
+
+  const sortOptions: { key: SortOption; label: string }[] = [
+    { key: "active", label: "most active" },
+    { key: "mcap", label: "market cap" },
+    { key: "newest", label: "newest" },
+    { key: "members", label: "members" },
+  ];
 
   const renderCard = (c: (typeof enriched)[number]) => (
     <Link
@@ -134,10 +189,8 @@ export default function CommunitiesPage() {
       href={`/app/community/${c.ticker}`}
       className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/40 hover:bg-surface-hover"
     >
-      {/* Header row */}
       <div className="flex items-center gap-3 p-3 pb-0">
         <TokenImage src={c.image} ticker={c.ticker} alt={c.name} />
-
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
@@ -157,9 +210,7 @@ export default function CommunitiesPage() {
             <span className="text-[10px] text-text-muted font-mono">${c.ticker}</span>
             {c.complete !== undefined && (
               <span className={`rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
-                c.complete
-                  ? "bg-accent/15 text-accent"
-                  : "bg-yellow-500/15 text-yellow-400"
+                c.complete ? "bg-accent/15 text-accent" : "bg-yellow-500/15 text-yellow-400"
               }`}>
                 {c.complete ? "GRADUATED" : "BONDING"}
               </span>
@@ -171,8 +222,6 @@ export default function CommunitiesPage() {
             )}
           </div>
         </div>
-
-        {/* Price / mcap */}
         <div className="shrink-0 text-right">
           <p className="text-xs font-bold text-text-primary">
             {c.fdv ? fmtUsd(c.fdv) : c.marketCapSol ? fmtSol(c.marketCapSol) : "—"}
@@ -185,7 +234,6 @@ export default function CommunitiesPage() {
         </div>
       </div>
 
-      {/* Community stats row */}
       <div className="flex items-center gap-3 px-3 pt-2.5 pb-2 text-[10px] text-text-muted">
         <span className="flex items-center gap-1">
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -207,7 +255,6 @@ export default function CommunitiesPage() {
         ) : null}
       </div>
 
-      {/* Bonding curve progress */}
       {c.progressPercent !== undefined && !c.complete && (
         <div className="px-3 pb-2.5">
           <div className="h-1 w-full rounded-full bg-background overflow-hidden">
@@ -222,17 +269,73 @@ export default function CommunitiesPage() {
   );
 
   return (
-    <div className="p-3 lg:p-4 space-y-4 animate-page-in">
-      {/* Page header */}
-      <div className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-text-primary">Communities</h1>
-          <p className="text-[11px] text-text-muted mt-0.5">Join a community to chat and raid together</p>
+    <div className="p-3 lg:p-4 space-y-3 animate-page-in">
+      {/* ── Contract address lookup banner ── */}
+      {searchIsAddress && (
+        <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 flex items-center gap-3">
+          {lookingUp ? (
+            <>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent shrink-0" />
+              <p className="text-sm text-text-secondary">looking up token on-chain...</p>
+            </>
+          ) : lookupError ? (
+            <>
+              <svg className="h-5 w-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="text-sm text-text-muted flex-1">{lookupError}</p>
+              <button onClick={handleLookup} className="text-xs font-bold text-accent hover:underline shrink-0">
+                retry
+              </button>
+            </>
+          ) : hasLocalMatch ? (
+            <>
+              <svg className="h-5 w-5 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-text-secondary flex-1">community found</p>
+            </>
+          ) : null}
         </div>
-        <span className="text-[10px] text-text-muted">{enriched.length} communities</span>
+      )}
+
+      {/* ── Filter tabs + Sort ── */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterTab(tab.key)}
+              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                filterTab === tab.key
+                  ? "bg-accent/15 text-accent"
+                  : "text-text-muted hover:text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              {tab.label}
+              {tab.count != null && tab.count > 0 && (
+                <span className={`ml-1 ${filterTab === tab.key ? "text-accent/60" : "text-text-muted/50"}`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] text-text-muted hidden sm:inline">{enriched.length} found</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[11px] font-medium text-text-secondary cursor-pointer focus:outline-none focus:border-accent"
+          >
+            {sortOptions.map((opt) => (
+              <option key={opt.key} value={opt.key}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Loading / empty state */}
+      {/* ── Content ── */}
       {isLoading ? (
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -240,61 +343,34 @@ export default function CommunitiesPage() {
           ))}
         </div>
       ) : enriched.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-8 text-center">
+        <div className="rounded-xl border border-border bg-surface p-8 text-center space-y-2">
           {lookingUp ? (
             <div className="flex flex-col items-center gap-2">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
               <p className="text-sm text-text-muted">looking up token on-chain...</p>
             </div>
           ) : (
-            <p className="text-sm text-text-muted">
-              {searchQuery ? "no communities match your search" : "no communities yet — tokens will auto-create them"}
-            </p>
+            <>
+              <p className="text-sm text-text-muted">
+                {searchQuery
+                  ? "no communities match your search"
+                  : filterTab === "joined"
+                  ? "you haven't joined any communities yet"
+                  : "no communities found"}
+              </p>
+              {!searchQuery && (
+                <p className="text-[11px] text-text-muted/60">
+                  paste a contract address in the search bar to add any Solana token
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : (
-        <>
-          {/* Search Results — show all matches when searching */}
-          {searchQuery ? (
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Search Results</h2>
-                <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{enriched.length}</span>
-              </div>
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                {enriched.map((c) => renderCard(c))}
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Most Active */}
-              {mostActive.length > 0 && (
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Most Active</h2>
-                    <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{mostActive.length}</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {mostActive.map((c) => renderCard(c))}
-                  </div>
-                </div>
-              )}
-
-              {/* All Communities */}
-              <div>
-                <div className="mb-2 flex items-center gap-2">
-                  <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">All Communities</h2>
-                  <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold text-accent">{enriched.length}</span>
-                </div>
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                  {enriched.map((c) => renderCard(c))}
-                </div>
-              </div>
-            </>
-          )}
-        </>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {enriched.map((c) => renderCard(c))}
+        </div>
       )}
-
     </div>
   );
 }
