@@ -47,6 +47,7 @@ export const raids = sqliteTable("raids", {
   participants: integer("participants").notNull().default(0),
   createdAt: integer("created_at").notNull(),
   warCry: text("war_cry"),
+  createdBy: text("created_by"),
 });
 
 export const messages = sqliteTable("messages", {

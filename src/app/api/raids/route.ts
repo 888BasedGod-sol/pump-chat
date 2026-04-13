@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
-  const { community, mint, tweetUrl, tweetId, tweet, author, authorName, authorAvatar, targetLikes, targetRetweets, targetReplies, warCry } = parsed.data;
+  const { community, mint, tweetUrl, tweetId, tweet, author, authorName, authorAvatar, targetLikes, targetRetweets, targetReplies, warCry, createdBy } = parsed.data;
 
   // Fetch real tweet content via X oEmbed (no API key required)
   let resolvedTweet = tweet || tweetUrl;
@@ -131,17 +131,18 @@ export async function POST(request: Request) {
       participants: 0,
       createdAt: Date.now(),
       warCry: warCry || null,
+      createdBy: createdBy || null,
     })
     .returning()
     .get();
 
   // Insert a system message in the community chat announcing the raid
-  const raidAuthor = result.author?.replace(/^@/, "") || "someone";
+  const raidCreator = (result.createdBy || result.author)?.replace(/^@/, "") || "someone";
   await db
     .insert(messages)
     .values({
       user: "system",
-      msg: `⚡ @${raidAuthor} started a raid! Rally the troops and engage the tweet.`,
+      msg: `⚡ @${raidCreator} started a raid! Rally the troops and engage the tweet.`,
       community,
       createdAt: Date.now(),
     })

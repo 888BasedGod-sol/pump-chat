@@ -57,7 +57,8 @@ function initDb() {
       target_replies INTEGER NOT NULL DEFAULT 25,
       participants INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL,
-      war_cry TEXT
+      war_cry TEXT,
+      created_by TEXT
     );
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,6 +94,9 @@ function initDb() {
   `).catch((err) => {
     console.warn("DB init warning (may be normal during build):", err.message);
   });
+
+  // Migrations for existing tables (ALTER TABLE is not idempotent — ignore errors)
+  client.execute("ALTER TABLE raids ADD COLUMN created_by TEXT").catch(() => {});
 
   return db;
 }

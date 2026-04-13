@@ -22,6 +22,7 @@ export const raidCreateSchema = z.object({
   targetRetweets: z.number().int().min(1).max(100_000).optional(),
   targetReplies: z.number().int().min(1).max(100_000).optional(),
   warCry: z.string().max(140).optional(),
+  createdBy: z.string().max(50).optional(),
 });
 
 export const raidEngageSchema = z.object({

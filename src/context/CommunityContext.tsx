@@ -740,6 +740,7 @@ export function CommunityProvider({
             tweetId: parsed.tweetId,
             tweet: tweetUrl.trim(),
             author: parsed.author,
+            createdBy: username,
             targetLikes: targets?.likes ?? 100,
             targetRetweets: targets?.retweets ?? 50,
             targetReplies: targets?.replies ?? 25,
