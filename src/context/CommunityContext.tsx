@@ -786,7 +786,7 @@ export function CommunityProvider({
       const res = await fetch("/api/communities/join", {
         method: "POST",
         headers,
-        body: JSON.stringify({ ticker }),
+        body: JSON.stringify({ ticker, user: username }),
       });
       if (!res.ok) {
         // Revert optimistic update
@@ -838,7 +838,7 @@ export function CommunityProvider({
       const res = await fetch("/api/communities/join", {
         method: "DELETE",
         headers,
-        body: JSON.stringify({ ticker }),
+        body: JSON.stringify({ ticker, user: username }),
       });
       if (!res.ok) {
         // Revert

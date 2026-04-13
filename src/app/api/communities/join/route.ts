@@ -15,6 +15,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const ticker = typeof body.ticker === "string" ? body.ticker.trim() : "";
+  const clientUser = typeof body.user === "string" ? body.user.trim() : "";
   if (!ticker) {
     return NextResponse.json({ error: "ticker is required" }, { status: 400 });
   }
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Community not found" }, { status: 404 });
   }
 
-  // Resolve X username from Privy
+  // Resolve X username from Privy, fall back to client-provided username
   let username = "";
   try {
     const privyUser = await getPrivyUser(verified.userId);
@@ -34,7 +35,10 @@ export async function POST(request: Request) {
       username = `@${twitter.username}`;
     }
   } catch {
-    // fallback
+    // Privy API call failed — fall back to client-provided user
+  }
+  if (!username && clientUser.startsWith("@")) {
+    username = clientUser;
   }
   if (!username) {
     return NextResponse.json({ error: "Could not resolve X account" }, { status: 400 });
@@ -83,11 +87,12 @@ export async function DELETE(request: Request) {
 
   const body = await request.json();
   const ticker = typeof body.ticker === "string" ? body.ticker.trim() : "";
+  const clientUser = typeof body.user === "string" ? body.user.trim() : "";
   if (!ticker) {
     return NextResponse.json({ error: "ticker is required" }, { status: 400 });
   }
 
-  // Resolve X username from Privy
+  // Resolve X username from Privy, fall back to client-provided username
   let username = "";
   try {
     const privyUser = await getPrivyUser(verified.userId);
@@ -96,7 +101,10 @@ export async function DELETE(request: Request) {
       username = `@${twitter.username}`;
     }
   } catch {
-    // fallback
+    // Privy API call failed — fall back to client-provided user
+  }
+  if (!username && clientUser.startsWith("@")) {
+    username = clientUser;
   }
   if (!username) {
     return NextResponse.json({ error: "Could not resolve X account" }, { status: 400 });
