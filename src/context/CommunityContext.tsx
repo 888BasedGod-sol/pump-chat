@@ -817,7 +817,7 @@ export function CommunityProvider({
         prev.map((c) => c.ticker === ticker ? { ...c, members: Math.max(0, c.members - 1) } : c)
       );
     }
-  }, [getAccessToken]);
+  }, [getAccessToken, username]);
 
   /* -- leave community -------------------------------------------- */
   const leaveCommunity = useCallback(async (ticker: string) => {
@@ -861,7 +861,7 @@ export function CommunityProvider({
         prev.map((c) => c.ticker === ticker ? { ...c, members: c.members + 1 } : c)
       );
     }
-  }, [getAccessToken]);
+  }, [getAccessToken, username]);
 
   /* -- bulk-sync communities from token feed ---------------------- */
   const syncTokenCommunities = useCallback(
