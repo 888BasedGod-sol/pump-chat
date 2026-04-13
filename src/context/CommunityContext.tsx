@@ -100,7 +100,7 @@ export interface Engagement {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const RAID_DURATION_MS = 60 * 60 * 1000; // 60 minutes
+const RAID_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 export function getRaidTimeLeft(raid: Raid): string {
   const elapsed = Date.now() - raid.createdAt;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type Raid, getRaidTimeLeft, getRaidStatus } from "@/context/CommunityContext";
 
-const RAID_DURATION_MS = 60 * 60 * 1000;
+const RAID_DURATION_MS = 5 * 60 * 1000;
 const XP_PER_ACTION = 10;
 
 function getMinutesLeft(raid: Raid): number {
