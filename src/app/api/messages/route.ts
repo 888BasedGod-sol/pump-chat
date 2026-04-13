@@ -1,18 +1,32 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { messages } from "@/lib/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq, and, gt } from "drizzle-orm";
 import { messageCreateSchema } from "@/lib/validation";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { verifyPrivyToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// GET — list messages (newest last for chat order, limited to recent 200)
-export async function GET() {
-  const rows = (await db
-    .select()
-    .from(messages)
+// GET — list messages
+// Optional query params:
+//   community — filter to a single community name
+//   after     — only return messages with id > after (for incremental polling)
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const community = searchParams.get("community");
+  const afterId = parseInt(searchParams.get("after") ?? "0", 10) || 0;
+
+  const conditions = [];
+  if (community) conditions.push(eq(messages.community, community));
+  if (afterId > 0) conditions.push(gt(messages.id, afterId));
+
+  const query = db.select().from(messages);
+  const filtered = conditions.length > 0
+    ? query.where(conditions.length === 1 ? conditions[0] : and(...conditions))
+    : query;
+
+  const rows = (await filtered
     .orderBy(desc(messages.createdAt))
     .limit(200)
     .all()
@@ -26,7 +40,7 @@ export async function GET() {
     time: formatTime(m.createdAt),
   }));
   return NextResponse.json(mapped, {
-    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30" },
+    headers: { "Cache-Control": "public, s-maxage=2, stale-while-revalidate=5" },
   });
 }
 

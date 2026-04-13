@@ -356,6 +356,47 @@ export function CommunityProvider({
     return () => clearInterval(interval);
   }, [isLoading, fetchRaids]);
 
+  /* -- poll messages every 3s for real-time chat ------------------- */
+  const lastMsgIdRef = useRef(0);
+  // Track the highest message id we've seen
+  useEffect(() => {
+    if (messages.length > 0) {
+      const maxId = Math.max(...messages.map((m) => m.id));
+      if (maxId > lastMsgIdRef.current) lastMsgIdRef.current = maxId;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    // Only poll when a specific community is selected
+    if (selectedCommunity === "all") return;
+    const communityName = communities.find((c) => c.ticker === selectedCommunity)?.name;
+    if (!communityName) return;
+
+    const poll = async () => {
+      try {
+        const params = new URLSearchParams({ community: communityName });
+        if (lastMsgIdRef.current > 0) params.set("after", String(lastMsgIdRef.current));
+        const res = await fetch(`/api/messages?${params}`);
+        if (!res.ok) return;
+        const fresh: ChatMessage[] = await res.json();
+        if (!Array.isArray(fresh) || fresh.length === 0) return;
+        // Merge — only add messages we don't already have
+        setMessages((prev) => {
+          const ids = new Set(prev.map((m) => m.id));
+          const newMsgs = fresh.filter((m) => !ids.has(m.id));
+          if (newMsgs.length === 0) return prev;
+          return [...prev, ...newMsgs];
+        });
+      } catch {
+        // ignore fetch errors
+      }
+    };
+
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [isLoading, selectedCommunity, communities]);
+
   /* -- enrich communities with DexScreener market data ------------ */
   const marketEnrichmentDone = useRef(false);
   useEffect(() => {
@@ -532,8 +573,9 @@ export function CommunityProvider({
     const community = communities.find((c) => c.ticker === selectedCommunity)?.name;
     if (!community) return;
 
+    const optimisticId = nextMsgId;
     const newMsg: ChatMessage = {
-      id: nextMsgId,
+      id: optimisticId,
       user: username,
       msg: msg.trim(),
       time: "now",
@@ -542,16 +584,26 @@ export function CommunityProvider({
     setMessages((prev) => [...prev, newMsg]);
     setNextMsgId((prev) => prev + 1);
 
-    // Persist to DB (with auth token)
+    // Persist to DB (with auth token), then replace optimistic id with server id
     (async () => {
       const token = await getAccessToken?.();
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      fetch("/api/messages", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ user: username, msg: msg.trim(), community }),
-      }).catch(() => {});
+      try {
+        const res = await fetch("/api/messages", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ user: username, msg: msg.trim(), community }),
+        });
+        if (res.ok) {
+          const saved: ChatMessage = await res.json();
+          // Replace the optimistic message with the server-assigned id
+          setMessages((prev) => prev.map((m) => m.id === optimisticId ? { ...m, id: saved.id } : m));
+          lastMsgIdRef.current = Math.max(lastMsgIdRef.current, saved.id);
+        }
+      } catch {
+        // send failed — optimistic message stays
+      }
     })();
 
     setActivity((prev) => [
