@@ -167,10 +167,10 @@ export default function RaidPanel() {
             </div>
           )}
 
-          {/* Custom targets toggle */}
+          {/* Custom targets */}
           <button
             onClick={() => setShowTargets(!showTargets)}
-            className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+            className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-secondary transition-colors group"
           >
             <svg
               className={`h-3 w-3 transition-transform ${showTargets ? "rotate-90" : ""}`}
@@ -181,40 +181,64 @@ export default function RaidPanel() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-            custom targets
+            <span>custom targets</span>
+            {!showTargets && (
+              <span className="text-[9px] text-text-muted/50 group-hover:text-text-muted">
+                {targetLikes}/{targetRTs}/{targetReplies}
+              </span>
+            )}
           </button>
 
           {showTargets && (
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[9px] text-text-muted block mb-0.5">likes</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={targetLikes}
-                  onChange={(e) => setTargetLikes(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
-                />
+            <div className="rounded-lg border border-border bg-background/50 p-2.5 space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <label className="flex items-center gap-1 text-[9px] font-medium text-text-muted uppercase tracking-wide">
+                    <svg className="h-3 w-3 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z" /></svg>
+                    likes
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={targetLikes}
+                    onChange={(e) => setTargetLikes(e.target.value)}
+                    className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-xs font-medium text-text-primary text-center focus:border-accent focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-1 text-[9px] font-medium text-text-muted uppercase tracking-wide">
+                    <svg className="h-3 w-3 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M23.77 15.67a.749.749 0 0 0-1.06 0l-2.22 2.22V7.65a3.755 3.755 0 0 0-3.75-3.75h-5.85a.75.75 0 0 0 0 1.5h5.85a2.25 2.25 0 0 1 2.25 2.25v10.24l-2.22-2.22a.749.749 0 1 0-1.06 1.06l3.5 3.5c.145.147.337.22.53.22s.383-.072.53-.22l3.5-3.5a.747.747 0 0 0 0-1.06zm-10.66 1.43a.75.75 0 0 0 0-1.5h-5.85a2.25 2.25 0 0 1-2.25-2.25V3.11l2.22 2.22a.749.749 0 1 0 1.06-1.06l-3.5-3.5a.747.747 0 0 0-1.06 0l-3.5 3.5a.749.749 0 1 0 1.06 1.06l2.22-2.22v10.24a3.755 3.755 0 0 0 3.75 3.75h5.85z" /></svg>
+                    retweets
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={targetRTs}
+                    onChange={(e) => setTargetRTs(e.target.value)}
+                    className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-xs font-medium text-text-primary text-center focus:border-accent focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-1 text-[9px] font-medium text-text-muted uppercase tracking-wide">
+                    <svg className="h-3 w-3 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01z" /></svg>
+                    replies
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={targetReplies}
+                    onChange={(e) => setTargetReplies(e.target.value)}
+                    className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-xs font-medium text-text-primary text-center focus:border-accent focus:outline-none transition-colors"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-[9px] text-text-muted block mb-0.5">retweets</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={targetRTs}
-                  onChange={(e) => setTargetRTs(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[9px] text-text-muted block mb-0.5">replies</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={targetReplies}
-                  onChange={(e) => setTargetReplies(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
-                />
+              <div className="flex justify-center">
+                <button
+                  onClick={() => { setTargetLikes("100"); setTargetRTs("50"); setTargetReplies("25"); }}
+                  className="text-[9px] text-text-muted hover:text-accent transition-colors"
+                >
+                  reset defaults
+                </button>
               </div>
             </div>
           )}
