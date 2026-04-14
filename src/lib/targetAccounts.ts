@@ -16,6 +16,18 @@ export const TARGET_ACCOUNTS = [
   "DegenerateNews",
   "BagCalls",
   "pepeDRT",
+  "0xBiZzy",
+  "zinceth",
+  "solana",
+  "realdogen",
+  "kale_abe",
+  "CookerFlips",
+  "cozypront",
+  "Jampzey",
+  "traderpow",
+  "lynk0x",
+  "patty_fi",
+  "metaversejoji",
 ] as const;
 
 export type TargetAccount = (typeof TARGET_ACCOUNTS)[number];
