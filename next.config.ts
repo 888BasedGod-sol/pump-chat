@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@nirholas/pump-sdk", "@coral-xyz/anchor", "bn.js"],
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "pbs.twimg.com" },
+    ],
+  },
   async headers() {
     return [
       {

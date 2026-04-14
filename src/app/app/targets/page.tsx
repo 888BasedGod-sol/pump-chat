@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePrivySafe } from "@/hooks/usePrivySafe";
 import { useCommunity } from "@/context/CommunityContext";
 import { TARGET_ACCOUNTS } from "@/lib/targetAccounts";
-import Image from "next/image";
 
 /* ---- Types ---- */
 interface Target {
@@ -144,12 +143,23 @@ export default function TargetsPage() {
     setTimeout(fetchTargets, 1000);
   };
 
-  // Unique authors with tweet counts
+  // Unique authors with tweet counts + avatar lookup
   const authorStats = useMemo(() => {
     const map = new Map<string, number>();
     for (const t of targets) {
       const handle = t.author.replace("@", "").toLowerCase();
       map.set(handle, (map.get(handle) ?? 0) + 1);
+    }
+    return map;
+  }, [targets]);
+
+  const authorAvatars = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of targets) {
+      const handle = t.author.replace("@", "").toLowerCase();
+      if (t.authorAvatar && !map.has(handle)) {
+        map.set(handle, t.authorAvatar);
+      }
     }
     return map;
   }, [targets]);
@@ -219,14 +229,19 @@ export default function TargetsPage() {
                           : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                       }`}
                     >
-                      <Image
-                        src={`https://unavatar.io/twitter/${handle}`}
-                        alt={handle}
-                        width={18}
-                        height={18}
-                        className="rounded-full"
-                        unoptimized
-                      />
+                      {authorAvatars.get(handle.toLowerCase()) ? (
+                        <img
+                          src={authorAvatars.get(handle.toLowerCase())}
+                          alt={handle}
+                          width={18}
+                          height={18}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-surface-hover text-[8px] font-bold uppercase text-text-muted">
+                          {handle[0]}
+                        </span>
+                      )}
                       <span className="truncate">@{handle}</span>
                       {count > 0 && (
                         <span className="ml-auto shrink-0 rounded-full bg-surface-hover px-1.5 text-[9px] font-bold tabular-nums text-text-muted">
@@ -294,14 +309,19 @@ export default function TargetsPage() {
                     : "bg-surface text-text-muted border border-border"
                 }`}
               >
-                <Image
-                  src={`https://unavatar.io/twitter/${handle}`}
-                  alt={handle}
-                  width={14}
-                  height={14}
-                  className="rounded-full"
-                  unoptimized
-                />
+                {authorAvatars.get(handle.toLowerCase()) ? (
+                  <img
+                    src={authorAvatars.get(handle.toLowerCase())}
+                    alt={handle}
+                    width={14}
+                    height={14}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-surface-hover text-[7px] font-bold uppercase text-text-muted">
+                    {handle[0]}
+                  </span>
+                )}
                 @{handle}
               </button>
             ))}
@@ -333,14 +353,19 @@ export default function TargetsPage() {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 rounded-full border border-border bg-surface-hover px-2 py-0.5 text-[10px] text-text-secondary hover:text-accent transition-colors"
                   >
-                    <Image
-                      src={`https://unavatar.io/twitter/${h}`}
-                      alt={h}
-                      width={14}
-                      height={14}
-                      className="rounded-full"
-                      unoptimized
-                    />
+                    {authorAvatars.get(h.toLowerCase()) ? (
+                      <img
+                        src={authorAvatars.get(h.toLowerCase())}
+                        alt={h}
+                        width={14}
+                        height={14}
+                        className="rounded-full"
+                      />
+                    ) : (
+                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-surface text-[7px] font-bold uppercase text-text-muted">
+                        {h[0]}
+                      </span>
+                    )}
                     @{h}
                   </a>
                 ))}
@@ -475,15 +500,19 @@ function TargetCard({
         <div className="flex-1 px-4 py-3 min-w-0">
           {/* Author line */}
           <div className="flex items-center gap-2 mb-1.5">
-            {target.authorAvatar && (
-              <Image
+            {target.authorAvatar ? (
+              <img
                 src={target.authorAvatar}
                 alt={target.author}
                 width={20}
                 height={20}
                 className="rounded-full"
-                unoptimized
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
+            ) : (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-hover text-[9px] font-bold uppercase text-text-muted">
+                {target.author.replace("@", "")[0]}
+              </span>
             )}
             <div className="flex items-center gap-1.5 min-w-0">
               {target.authorName && (
