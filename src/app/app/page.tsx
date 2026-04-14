@@ -210,11 +210,9 @@ export default function CommunitiesPage() {
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-[10px] text-text-muted font-mono">${c.ticker}</span>
-            {c.complete !== undefined && (
-              <span className={`rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
-                c.complete ? "bg-accent/20 text-accent" : "bg-yellow-400/20 text-yellow-300"
-              }`}>
-                {c.complete ? "GRADUATED" : "BONDING"}
+            {c.complete && (
+              <span className="rounded px-1 py-0.5 text-[8px] font-bold leading-none bg-accent/20 text-accent">
+                GRADUATED
               </span>
             )}
             {joinedCommunities.has(c.ticker) && (
