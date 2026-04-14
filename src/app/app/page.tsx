@@ -189,6 +189,8 @@ export default function CommunitiesPage() {
       href={`/app/community/${c.ticker}`}
       className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/50 hover:bg-surface-hover hover:shadow-[0_0_20px_-5px_var(--color-accent-glow)]"
     >
+      {/* Subtle top accent line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent group-hover:via-accent/60 transition-all" />
       <div className="flex items-center gap-3 p-3 pb-0">
         <TokenImage src={c.image} ticker={c.ticker} alt={c.name} />
         <div className="min-w-0 flex-1">
@@ -235,17 +237,17 @@ export default function CommunitiesPage() {
       </div>
 
       <div className="flex items-center gap-3 px-3 pt-2.5 pb-2 text-[10px] text-text-muted">
-        <span className="flex items-center gap-1">
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          <span className="font-medium text-text-secondary">{c.members}</span>
+        <span className="flex items-center gap-1 text-secondary/70 group-hover:text-secondary transition-colors">
+          <svg className="h-3 w-3 drop-shadow-[0_0_3px_var(--color-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span className="font-semibold text-text-secondary">{c.members}</span>
         </span>
-        <span className="flex items-center gap-1">
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-          <span className="font-medium text-text-secondary">{c.msgCount}</span>
+        <span className="flex items-center gap-1 text-accent/70 group-hover:text-accent transition-colors">
+          <svg className="h-3 w-3 drop-shadow-[0_0_3px_var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <span className="font-semibold text-text-secondary">{c.msgCount}</span>
         </span>
-        <span className="flex items-center gap-1">
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          <span className="font-medium text-text-secondary">{c.raidCount}</span>
+        <span className="flex items-center gap-1 text-yellow-400/70 group-hover:text-yellow-400 transition-colors">
+          <svg className="h-3 w-3 drop-shadow-[0_0_3px_rgba(250,204,21,0.4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <span className="font-semibold text-text-secondary">{c.raidCount}</span>
         </span>
         {c.holders != null && c.holders > 0 && (
           <span className="ml-auto text-[9px]">{fmtCompact(c.holders)} holders</span>
