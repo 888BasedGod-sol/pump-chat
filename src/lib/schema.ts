@@ -26,6 +26,11 @@ export const communities = sqliteTable("communities", {
   image: text("image"),
   marketCapSol: integer("market_cap_sol"),
   complete: integer("complete", { mode: "boolean" }),
+  bannerUrl: text("banner_url"),
+  website: text("website"),
+  twitter: text("twitter"),
+  telegram: text("telegram"),
+  discord: text("discord"),
 });
 
 export const raids = sqliteTable("raids", {
@@ -71,4 +76,34 @@ export const communityMembers = sqliteTable("community_members", {
   communityTicker: text("community_ticker").notNull(),
   user: text("user").notNull(), // @handle
   joinedAt: integer("joined_at").notNull(),
+});
+
+export const leaderVotes = sqliteTable("leader_votes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  communityTicker: text("community_ticker").notNull(),
+  voter: text("voter").notNull(),       // @handle of the voter
+  candidate: text("candidate").notNull(), // @handle of the candidate
+  votedAt: integer("voted_at").notNull(),
+});
+
+export const targetTweets = sqliteTable("target_tweets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tweetUrl: text("tweet_url").notNull(),
+  tweetId: text("tweet_id").notNull(),
+  author: text("author").notNull(),           // @handle
+  authorName: text("author_name"),             // display name from oEmbed
+  authorAvatar: text("author_avatar"),         // profile pic
+  tweetText: text("tweet_text"),               // tweet content
+  submittedBy: text("submitted_by").notNull(), // @handle of submitter
+  submittedAt: integer("submitted_at").notNull(),
+  upvotes: integer("upvotes").notNull().default(0),
+  raidId: integer("raid_id"),                  // null until raided
+  communityTicker: text("community_ticker"),   // optional — null = global
+});
+
+export const targetVotes = sqliteTable("target_votes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  targetId: integer("target_id").notNull(),
+  user: text("user").notNull(),   // @handle
+  votedAt: integer("voted_at").notNull(),
 });

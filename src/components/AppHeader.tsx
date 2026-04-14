@@ -30,7 +30,8 @@ export default function AppHeader() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-md relative">
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
       <div className="flex h-12 items-center justify-between px-4">
         <div className="flex items-center gap-4">
           {/* Mobile hamburger */}
@@ -47,10 +48,19 @@ export default function AppHeader() {
               )}
             </svg>
           </button>
-          <Link href="/app" className="flex items-center gap-2 text-base font-bold text-accent tracking-tight">
-            <Image src="/logo.png" alt="PumpChat" width={28} height={28} className="rounded-md" />
+          <Link href="/" className="flex items-center gap-2 text-base font-bold text-accent tracking-tight">
+            <Image src="/nobg.png" alt="PumpChat" width={28} height={28} className="rounded-md" />
             PumpChat
           </Link>
+          <a
+            href="https://x.com/PumpChatDev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors hover:text-accent hover:bg-surface-hover"
+            title="@PumpChatDev"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
           <div className="hidden md:block">
             <input
               type="text"
@@ -63,11 +73,30 @@ export default function AppHeader() {
         </div>
         <nav className="hidden items-center gap-4 text-xs font-medium text-text-secondary md:flex">
           <Link href="/app" className={`transition-colors hover:text-text-primary ${isActive("/app") ? "text-accent" : ""}`}>
-            communities
+            Communities
+          </Link>
+          <Link href="/app/targets" className={`transition-colors hover:text-text-primary ${isActive("/app/targets") ? "text-accent" : ""}`}>
+            Targets
           </Link>
           <Link href="/app/leaderboard" className={`transition-colors hover:text-text-primary ${isActive("/app/leaderboard") ? "text-accent" : ""}`}>
-            leaderboard
+            Leaderboard
           </Link>
+          {/* Raid Agent */}
+          <button
+            className="group relative flex items-center gap-1.5 rounded-md border border-accent/30 bg-accent/5 px-2.5 py-1 text-xs font-bold text-accent transition-colors hover:bg-accent/10 cursor-default"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 01-1.59.659H9.06a2.25 2.25 0 01-1.591-.659L5 14.5m14 0V5.846a2.087 2.087 0 00-.684-1.544A21.88 21.88 0 0012 3c-2.14 0-4.194.306-6.132.876-.586.172-1.018.7-1.018 1.319v7.305" />
+            </svg>
+            Raid Agent
+            <span className="flex h-4 items-center rounded-full bg-accent/15 px-1.5 text-[8px] font-black uppercase tracking-wider text-accent">
+              soon
+            </span>
+            {/* Tooltip */}
+            <span className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-background border border-border px-2 py-1 text-[10px] text-text-muted opacity-0 transition-opacity group-hover:opacity-100 shadow-lg z-50">
+              Automated raiding agent — coming soon
+            </span>
+          </button>
         </nav>
         <div className="flex items-center gap-2">
           {/* X auth — primary via Privy */}
@@ -108,11 +137,21 @@ export default function AppHeader() {
           />
           <div className="flex flex-col gap-1 text-xs font-medium text-text-secondary">
             <Link href="/app" onClick={closeMobileMenu} className={`rounded-md px-2 py-1.5 hover:bg-surface-hover ${isActive("/app") ? "text-accent" : "text-text-primary"}`}>
-              communities
+              Communities
+            </Link>
+            <Link href="/app/targets" onClick={closeMobileMenu} className={`rounded-md px-2 py-1.5 hover:bg-surface-hover ${isActive("/app/targets") ? "text-accent" : ""}`}>
+              Targets
             </Link>
             <Link href="/app/leaderboard" onClick={closeMobileMenu} className={`rounded-md px-2 py-1.5 hover:bg-surface-hover ${isActive("/app/leaderboard") ? "text-accent" : ""}`}>
-              leaderboard
+              Leaderboard
             </Link>
+            <div className="flex items-center gap-2 rounded-md border border-accent/20 bg-accent/5 px-2 py-1.5">
+              <svg className="h-3.5 w-3.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 01-1.59.659H9.06a2.25 2.25 0 01-1.591-.659L5 14.5m14 0V5.846a2.087 2.087 0 00-.684-1.544A21.88 21.88 0 0012 3c-2.14 0-4.194.306-6.132.876-.586.172-1.018.7-1.018 1.319v7.305" />
+              </svg>
+              <span className="text-accent font-bold">Raid Agent</span>
+              <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-accent">coming soon</span>
+            </div>
           </div>
           {authenticated && xUsername ? (
             <button

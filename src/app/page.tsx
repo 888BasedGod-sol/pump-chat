@@ -110,7 +110,7 @@ export default async function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
           <a href="/" className="flex items-center gap-2 text-lg font-bold text-accent tracking-tight">
-            <Image src="/logo.png" alt="PumpChat" width={28} height={28} className="rounded-md" />
+            <Image src="/nobg.png" alt="PumpChat" width={28} height={28} className="rounded-md" />
             PumpChat
           </a>
           <nav className="hidden items-center gap-6 text-sm text-text-secondary md:flex">
@@ -261,7 +261,7 @@ export default async function LandingPage() {
           <span className="text-[11px] text-text-muted font-medium">PumpChat</span>
           <div className="flex gap-4 text-[11px] text-text-muted">
             <a href="#" className="transition-colors hover:text-text-secondary">docs</a>
-            <a href="#" className="transition-colors hover:text-text-secondary">X</a>
+            <a href="https://x.com/PumpChatDev" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-text-secondary">X</a>
           </div>
         </div>
       </footer>

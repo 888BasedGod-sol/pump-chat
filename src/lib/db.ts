@@ -91,12 +91,51 @@ function initDb() {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_community_owners_unique ON community_owners(community_ticker, x_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_community_members_unique ON community_members(community_ticker, user);
     CREATE INDEX IF NOT EXISTS idx_community_members_ticker ON community_members(community_ticker);
+
+    CREATE TABLE IF NOT EXISTS leader_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      community_ticker TEXT NOT NULL,
+      voter TEXT NOT NULL,
+      candidate TEXT NOT NULL,
+      voted_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_leader_votes_unique ON leader_votes(community_ticker, voter);
+    CREATE INDEX IF NOT EXISTS idx_leader_votes_ticker ON leader_votes(community_ticker);
+
+    CREATE TABLE IF NOT EXISTS target_tweets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tweet_url TEXT NOT NULL,
+      tweet_id TEXT NOT NULL,
+      author TEXT NOT NULL,
+      author_name TEXT,
+      author_avatar TEXT,
+      tweet_text TEXT,
+      submitted_by TEXT NOT NULL,
+      submitted_at INTEGER NOT NULL,
+      upvotes INTEGER NOT NULL DEFAULT 0,
+      raid_id INTEGER,
+      community_ticker TEXT
+    );
+    CREATE TABLE IF NOT EXISTS target_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      target_id INTEGER NOT NULL,
+      user TEXT NOT NULL,
+      voted_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_target_votes_unique ON target_votes(target_id, user);
+    CREATE INDEX IF NOT EXISTS idx_target_tweets_submitted ON target_tweets(submitted_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_target_tweets_tweet_id ON target_tweets(tweet_id);
   `).catch((err) => {
     console.warn("DB init warning (may be normal during build):", err.message);
   });
 
   // Migrations for existing tables (ALTER TABLE is not idempotent — ignore errors)
   client.execute("ALTER TABLE raids ADD COLUMN created_by TEXT").catch(() => {});
+  client.execute("ALTER TABLE communities ADD COLUMN banner_url TEXT").catch(() => {});
+  client.execute("ALTER TABLE communities ADD COLUMN website TEXT").catch(() => {});
+  client.execute("ALTER TABLE communities ADD COLUMN twitter TEXT").catch(() => {});
+  client.execute("ALTER TABLE communities ADD COLUMN telegram TEXT").catch(() => {});
+  client.execute("ALTER TABLE communities ADD COLUMN discord TEXT").catch(() => {});
 
   return db;
 }

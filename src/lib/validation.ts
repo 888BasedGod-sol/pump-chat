@@ -59,3 +59,12 @@ export const claimOwnershipSchema = z.object({
   communityTicker: z.string().min(1).max(20),
   walletAddress: solanaAddress,
 });
+
+export const targetSubmitSchema = z.object({
+  tweetUrl: tweetUrl,
+  communityTicker: z.string().min(1).max(20).optional(),
+});
+
+export const targetVoteSchema = z.object({
+  targetId: z.number().int().positive(),
+});

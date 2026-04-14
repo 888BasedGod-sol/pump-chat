@@ -95,7 +95,7 @@ export default function RaidPanel() {
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-text-primary">raid hub</h3>
+            <h3 className="text-sm font-bold text-text-primary">Raid Hub</h3>
             {activeRaids.length > 0 && (
               <p className="text-[10px] text-accent font-medium flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />

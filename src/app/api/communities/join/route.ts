@@ -10,12 +10,15 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const verified = await verifyPrivyToken(request);
   if (!verified) {
+    console.error("[JOIN] Auth failed — no valid token");
     return NextResponse.json({ error: "Must be signed in" }, { status: 401 });
   }
+  console.log("[JOIN] Auth passed, userId:", verified.userId);
 
   const body = await request.json();
   const ticker = typeof body.ticker === "string" ? body.ticker.trim() : "";
   const clientUser = typeof body.user === "string" ? body.user.trim() : "";
+  console.log("[JOIN] body:", { ticker, clientUser });
   if (!ticker) {
     return NextResponse.json({ error: "ticker is required" }, { status: 400 });
   }
@@ -23,6 +26,7 @@ export async function POST(request: Request) {
   // Verify community exists
   const community = await db.select().from(communities).where(eq(communities.ticker, ticker)).get();
   if (!community) {
+    console.error("[JOIN] Community not found:", ticker);
     return NextResponse.json({ error: "Community not found" }, { status: 404 });
   }
 
@@ -30,19 +34,23 @@ export async function POST(request: Request) {
   let username = "";
   try {
     const privyUser = await getPrivyUser(verified.userId);
+    console.log("[JOIN] Privy user twitter:", privyUser.twitter);
     const twitter = privyUser.twitter;
     if (twitter?.username) {
       username = `@${twitter.username}`;
     }
-  } catch {
-    // Privy API call failed — fall back to client-provided user
+  } catch (err) {
+    console.error("[JOIN] getPrivyUser failed:", err);
   }
   if (!username && clientUser.startsWith("@")) {
+    console.log("[JOIN] Using client fallback username:", clientUser);
     username = clientUser;
   }
   if (!username) {
+    console.error("[JOIN] Could not resolve username. clientUser:", clientUser);
     return NextResponse.json({ error: "Could not resolve X account" }, { status: 400 });
   }
+  console.log("[JOIN] Resolved username:", username);
 
   // Check if already a member
   const existing = await db
@@ -52,7 +60,13 @@ export async function POST(request: Request) {
     .get();
 
   if (existing) {
-    return NextResponse.json({ error: "Already a member" }, { status: 409 });
+    // Return current member count so client can sync
+    const count = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(communityMembers)
+      .where(eq(communityMembers.communityTicker, ticker))
+      .get();
+    return NextResponse.json({ error: "Already a member", joined: true, members: count?.count ?? 1 }, { status: 409 });
   }
 
   // Insert membership

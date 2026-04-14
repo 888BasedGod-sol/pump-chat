@@ -19,21 +19,21 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/logo.png", type: "image/png", sizes: "2000x2000" },
+      { url: "/nobg.png", type: "image/png", sizes: "2000x2000" },
     ],
-    apple: "/logo.png",
+    apple: "/nobg.png",
   },
   openGraph: {
     title: "Pump Chat",
     description: "The one-stop hub for memecoin communities",
-    images: [{ url: "/logo.png", width: 2000, height: 2000 }],
+    images: [{ url: "/nobg.png", width: 2000, height: 2000 }],
     type: "website",
   },
   twitter: {
     card: "summary",
     title: "Pump Chat",
     description: "The one-stop hub for memecoin communities",
-    images: ["/logo.png"],
+    images: ["/nobg.png"],
   },
 };
 

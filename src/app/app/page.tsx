@@ -187,7 +187,7 @@ export default function CommunitiesPage() {
     <Link
       key={c.ticker}
       href={`/app/community/${c.ticker}`}
-      className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/40 hover:bg-surface-hover"
+      className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/50 hover:bg-surface-hover hover:shadow-[0_0_20px_-5px_var(--color-accent-glow)]"
     >
       <div className="flex items-center gap-3 p-3 pb-0">
         <TokenImage src={c.image} ticker={c.ticker} alt={c.name} />
@@ -198,9 +198,9 @@ export default function CommunitiesPage() {
             </p>
             {c.rank <= 3 && (
               <span className={`shrink-0 rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
-                c.rank === 1 ? "bg-yellow-500/15 text-yellow-400" :
+                c.rank === 1 ? "bg-yellow-400/20 text-yellow-300 shadow-[0_0_6px_rgba(250,204,21,0.2)]" :
                 c.rank === 2 ? "bg-gray-400/15 text-gray-300" :
-                "bg-orange-500/15 text-orange-400"
+                "bg-orange-400/20 text-orange-300"
               }`}>
                 #{c.rank}
               </span>
@@ -210,13 +210,13 @@ export default function CommunitiesPage() {
             <span className="text-[10px] text-text-muted font-mono">${c.ticker}</span>
             {c.complete !== undefined && (
               <span className={`rounded px-1 py-0.5 text-[8px] font-bold leading-none ${
-                c.complete ? "bg-accent/15 text-accent" : "bg-yellow-500/15 text-yellow-400"
+                c.complete ? "bg-accent/20 text-accent" : "bg-yellow-400/20 text-yellow-300"
               }`}>
                 {c.complete ? "GRADUATED" : "BONDING"}
               </span>
             )}
             {joinedCommunities.has(c.ticker) && (
-              <span className="rounded px-1 py-0.5 text-[8px] font-bold leading-none bg-accent/15 text-accent">
+              <span className="rounded px-1 py-0.5 text-[8px] font-bold leading-none bg-secondary/20 text-secondary">
                 JOINED
               </span>
             )}
@@ -227,7 +227,7 @@ export default function CommunitiesPage() {
             {c.fdv ? fmtUsd(c.fdv) : c.marketCapSol ? fmtSol(c.marketCapSol) : "—"}
           </p>
           {c.priceChange24h != null && (
-            <p className={`text-[10px] font-bold ${c.priceChange24h >= 0 ? "text-accent" : "text-red-400"}`}>
+            <p className={`text-[10px] font-bold ${c.priceChange24h >= 0 ? "text-accent" : "text-danger"}`}>
               {fmtPct(c.priceChange24h)}
             </p>
           )}
@@ -306,9 +306,9 @@ export default function CommunitiesPage() {
             <button
               key={tab.key}
               onClick={() => setFilterTab(tab.key)}
-              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-all whitespace-nowrap ${
                 filterTab === tab.key
-                  ? "bg-accent/15 text-accent"
+                  ? "bg-accent/15 text-accent shadow-[0_0_8px_-2px_var(--color-accent-glow)]"
                   : "text-text-muted hover:text-text-secondary hover:bg-surface-hover"
               }`}
             >

@@ -29,6 +29,12 @@ export interface Community {
   txns24h?: { buys: number; sells: number } | null;
   tokenCreatedAt?: number | null;
   holders?: number | null;
+  /* Leader-managed fields */
+  bannerUrl?: string | null;
+  website?: string | null;
+  twitter?: string | null;
+  telegram?: string | null;
+  discord?: string | null;
 }
 
 export interface ChatMessage {
@@ -306,20 +312,7 @@ export function CommunityProvider({
           setEngagements(engRes);
         }
 
-        // Fetch which communities the user has joined
-        if (username !== "anon") {
-          try {
-            const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`);
-            if (joinedRes.ok) {
-              const tickers: string[] = await joinedRes.json();
-              if (Array.isArray(tickers)) {
-                setJoinedCommunities(new Set(tickers));
-              }
-            }
-          } catch {
-            // ignore
-          }
-        }
+        // Joined communities are fetched in a separate effect keyed on username
       } catch {
         // hydration failed — app works with empty state
       } finally {
@@ -328,6 +321,26 @@ export function CommunityProvider({
     }
     hydrate();
   }, []);
+
+  /* -- fetch joined communities when username becomes available ---- */
+  useEffect(() => {
+    if (username === "anon") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`);
+        if (joinedRes.ok && !cancelled) {
+          const tickers: string[] = await joinedRes.json();
+          if (Array.isArray(tickers)) {
+            setJoinedCommunities(new Set(tickers));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [username]);
 
   /* -- fetch fresh raids from server ------------------------------- */
   const fetchRaids = useCallback(async () => {
@@ -788,8 +801,9 @@ export function CommunityProvider({
         headers,
         body: JSON.stringify({ ticker, user: username }),
       });
-      if (!res.ok) {
-        // Revert optimistic update
+      if (!res.ok && res.status !== 409) {
+        // Revert optimistic update (409 = already joined, keep the state)
+        console.warn("[joinCommunity] failed:", res.status, await res.text().catch(() => ""));
         setJoinedCommunities((prev) => {
           const next = new Set(prev);
           next.delete(ticker);
@@ -799,7 +813,7 @@ export function CommunityProvider({
           prev.map((c) => c.ticker === ticker ? { ...c, members: Math.max(0, c.members - 1) } : c)
         );
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (typeof data.members === "number") {
           setCommunities((prev) =>
             prev.map((c) => c.ticker === ticker ? { ...c, members: data.members } : c)
