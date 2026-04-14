@@ -1,30 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { targetTweets, targetVotes, raids } from "@/lib/schema";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { targetVoteSchema } from "@/lib/validation";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { verifyPrivyToken, getPrivyUser } from "@/lib/auth";
 import { fetchTargetTweets } from "@/lib/twitter";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // allow up to 60s for X API fetch
 
-/* ---------- in-memory refresh gate ---------- */
-let lastRefresh = 0;
-const REFRESH_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
-
-/** Fetch new tweets from X API and upsert into DB (server-side cache). */
+/** Fetch new tweets from X API and upsert into DB. */
 async function refreshFromXApi() {
-  const now = Date.now();
-  if (now - lastRefresh < REFRESH_INTERVAL_MS) return; // too soon
-  lastRefresh = now;
-
   try {
     const tweets = await fetchTargetTweets();
     if (tweets.length === 0) return;
 
     for (const t of tweets) {
-      // Upsert — skip if tweet_id already exists
       const existing = await db
         .select({ id: targetTweets.id })
         .from(targetTweets)
@@ -51,10 +43,33 @@ async function refreshFromXApi() {
   }
 }
 
+/** Check if a refresh is needed (last tweet older than 2 min). */
+async function needsRefresh(): Promise<boolean> {
+  const latest = await db
+    .select({ submittedAt: targetTweets.submittedAt })
+    .from(targetTweets)
+    .orderBy(desc(targetTweets.submittedAt))
+    .limit(1)
+    .get();
+  if (!latest) return true; // empty table — must refresh
+  const age = Date.now() - new Date(latest.submittedAt).getTime();
+  return age > 2 * 60 * 1000;
+}
+
 // GET — list tweets from monitored accounts with vote status
 export async function GET(request: Request) {
-  // Trigger background refresh (non-blocking)
-  refreshFromXApi();
+  const isEmpty = (await db.select({ id: targetTweets.id }).from(targetTweets).limit(1).all()).length === 0;
+
+  if (isEmpty) {
+    // First ever call — await the refresh so we return data
+    await refreshFromXApi();
+  } else {
+    // Schedule background refresh after response is sent (survives on serverless)
+    const shouldRefresh = await needsRefresh();
+    if (shouldRefresh) {
+      after(() => refreshFromXApi());
+    }
+  }
 
   const { searchParams } = new URL(request.url);
   const user = searchParams.get("user");
