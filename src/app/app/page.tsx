@@ -269,7 +269,7 @@ export default function CommunitiesPage() {
         <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 flex items-center gap-3">
           {lookingUp ? (
             <>
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent shrink-0" />
+              <div className="h-5 w-5 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent shrink-0" />
               <p className="text-sm text-text-secondary">looking up token on-chain...</p>
             </>
           ) : lookupError ? (
@@ -340,7 +340,7 @@ export default function CommunitiesPage() {
         <div className="rounded-xl border border-border bg-surface p-8 text-center space-y-2">
           {lookingUp ? (
             <div className="flex flex-col items-center gap-2">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <div className="h-5 w-5 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent" />
               <p className="text-sm text-text-muted">looking up token on-chain...</p>
             </div>
           ) : (

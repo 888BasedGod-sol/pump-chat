@@ -355,7 +355,7 @@ export default function TargetsPage() {
           {/* Feed */}
           {loading ? (
             <div className="flex flex-col items-center py-16">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <div className="h-5 w-5 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent" />
               <p className="mt-3 text-xs text-text-muted">Loading targets...</p>
             </div>
           ) : noApiKey ? (

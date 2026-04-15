@@ -61,7 +61,7 @@ export default function Leaderboard() {
         <div className="divide-y divide-border">
           {isLoading ? (
             <div className="px-4 py-6 text-center">
-              <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <div className="inline-block h-4 w-4 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent" />
               <p className="mt-2 text-xs text-text-muted">loading...</p>
             </div>
           ) : communityLeaders.length === 0 ? (
@@ -127,7 +127,7 @@ export default function Leaderboard() {
         <div className="divide-y divide-border">
           {isLoading ? (
             <div className="px-4 py-6 text-center">
-              <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <div className="inline-block h-4 w-4 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent" />
               <p className="mt-2 text-xs text-text-muted">loading...</p>
             </div>
           ) : leaders.length === 0 ? (

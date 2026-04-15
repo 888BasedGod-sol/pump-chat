@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
         {isLoading ? (
           <div className="px-4 py-12 text-center">
-            <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            <div className="inline-block h-5 w-5 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent" />
             <p className="mt-3 text-xs text-text-muted">loading leaderboard...</p>
           </div>
         ) : communityLeaders.length === 0 ? (

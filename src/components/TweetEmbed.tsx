@@ -112,7 +112,7 @@ export default function TweetEmbed({ tweetId }: TweetEmbedProps) {
     <div className="mb-3 rounded-xl overflow-hidden [&_twitter-widget]:!max-w-full [&_iframe]:!max-w-full">
       {!loaded && (
         <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background/50 p-4">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+          <div className="h-4 w-4 animate-smooth-spin rounded-full border-2 border-accent/30 border-t-accent" />
           <span className="text-[11px] text-text-muted">loading tweet...</span>
         </div>
       )}

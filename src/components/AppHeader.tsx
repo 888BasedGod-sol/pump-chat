@@ -15,11 +15,11 @@ export default function AppHeader() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pathname = usePathname();
 
-  // Debounce search input
+  // Debounce search input - faster for snappier UX
   useEffect(() => {
     debounceRef.current = setTimeout(() => {
       setSearchQuery(localSearch);
-    }, 300);
+    }, 150);
     return () => clearTimeout(debounceRef.current);
   }, [localSearch, setSearchQuery]);
 

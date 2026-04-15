@@ -87,6 +87,17 @@ body {
   50% { opacity: 0.6; }
 }
 
+/* Smooth spinner animation - GPU accelerated */
+@keyframes smooth-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-smooth-spin {
+  animation: smooth-spin 0.8s linear infinite;
+  will-change: transform;
+  transform-origin: center;
+}
+
 /* Progress fill animation */
 @keyframes fill-in {
   from { width: 0%; }
