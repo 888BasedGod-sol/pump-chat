@@ -1,7 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { targetTweets, targetVotes, raids } from "@/lib/schema";
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, sql, isNull } from "drizzle-orm";
 import { targetVoteSchema } from "@/lib/validation";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { verifyPrivyToken, getPrivyUser } from "@/lib/auth";
@@ -16,12 +16,31 @@ async function refreshFromXApi() {
     const tweets = await fetchTargetTweets();
     if (tweets.length === 0) return;
 
+    // Build a map of author -> follower count for bulk updates
+    const authorFollowers = new Map<string, number>();
+    for (const t of tweets) {
+      if (t.authorFollowers) {
+        authorFollowers.set(`@${t.authorUsername}`.toLowerCase(), t.authorFollowers);
+      }
+    }
+
+    // Update all existing tweets from these authors with follower counts
+    for (const [author, followers] of authorFollowers) {
+      await db
+        .update(targetTweets)
+        .set({ authorFollowers: followers })
+        .where(eq(sql`lower(${targetTweets.author})`, author))
+        .run();
+    }
+
+    // Insert new tweets
     for (const t of tweets) {
       const existing = await db
         .select({ id: targetTweets.id })
         .from(targetTweets)
         .where(eq(targetTweets.tweetId, t.tweetId))
         .get();
+      
       if (existing) continue;
 
       await db.insert(targetTweets).values({
@@ -44,7 +63,7 @@ async function refreshFromXApi() {
   }
 }
 
-/** Check if a refresh is needed (last tweet older than 2 min). */
+/** Check if a refresh is needed (last tweet older than 2 min or missing follower data). */
 async function needsRefresh(): Promise<boolean> {
   const latest = await db
     .select({ submittedAt: targetTweets.submittedAt })
@@ -54,7 +73,16 @@ async function needsRefresh(): Promise<boolean> {
     .get();
   if (!latest) return true; // empty table — must refresh
   const age = Date.now() - new Date(latest.submittedAt).getTime();
-  return age > 2 * 60 * 1000;
+  if (age > 2 * 60 * 1000) return true;
+  
+  // Also refresh if any tweets are missing follower data
+  const missingFollowers = await db
+    .select({ id: targetTweets.id })
+    .from(targetTweets)
+    .where(isNull(targetTweets.authorFollowers))
+    .limit(1)
+    .get();
+  return !!missingFollowers;
 }
 
 // GET — list tweets from monitored accounts with vote status
