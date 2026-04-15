@@ -63,7 +63,7 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
   const [mobileTab, setMobileTab] = useState<"raids" | "chat" | "voice" | "members">("raids");
   const [fetchedCommunity, setFetchedCommunity] = useState<typeof communities[number] | null>(null);
   const [copied, setCopied] = useState(false);
-  const [members, setMembers] = useState<{ user: string; joinedAt: number }[]>([]);
+  const [members, setMembers] = useState<{ user: string; joinedAt: number; followers?: number | null }[]>([]);
   const [electedLeader, setElectedLeader] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const community = communities.find((c) => c.ticker === ticker) ?? fetchedCommunity;
@@ -520,7 +520,9 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
                     </div>
                   ) : (
                     <div className="divide-y divide-border">
-                      {members.map((m) => (
+                      {[...members]
+                        .sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0))
+                        .map((m) => (
                         <a
                           key={m.user}
                           href={`https://x.com/${m.user.replace(/^@/, "")}`}
@@ -532,7 +534,12 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
                             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent text-[10px] font-bold">
                               {m.user.charAt(1).toUpperCase()}
                             </div>
-                            <span className="text-xs font-medium text-text-primary">{m.user}</span>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-medium text-text-primary">{m.user}</span>
+                              {m.followers != null && m.followers > 0 && (
+                                <span className="text-[9px] text-text-muted">{fmtCompact(m.followers)} followers</span>
+                              )}
+                            </div>
                           </div>
                           <span className="text-[10px] text-text-muted">
                             {timeAgo(m.joinedAt)}

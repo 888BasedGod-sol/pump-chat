@@ -76,6 +76,7 @@ export const communityMembers = sqliteTable("community_members", {
   communityTicker: text("community_ticker").notNull(),
   user: text("user").notNull(), // @handle
   joinedAt: integer("joined_at").notNull(),
+  followers: integer("followers"), // X follower count
 });
 
 export const leaderVotes = sqliteTable("leader_votes", {

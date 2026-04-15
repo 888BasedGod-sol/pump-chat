@@ -6,6 +6,28 @@ import { eq, and, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
+/** Fetch follower count for a username from X API */
+async function fetchFollowerCount(username: string): Promise<number | null> {
+  const token = process.env.X_BEARER_TOKEN;
+  if (!token) return null;
+  
+  const handle = username.replace(/^@/, "");
+  try {
+    const res = await fetch(
+      `https://api.twitter.com/2/users/by/username/${handle}?user.fields=public_metrics`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.data?.public_metrics?.followers_count ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // POST — join a community
 export async function POST(request: Request) {
   const verified = await verifyPrivyToken(request);
@@ -69,11 +91,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Already a member", joined: true, members: count?.count ?? 1 }, { status: 409 });
   }
 
+  // Fetch follower count from X API
+  const followers = await fetchFollowerCount(username);
+
   // Insert membership
   await db.insert(communityMembers).values({
     communityTicker: ticker,
     user: username,
     joinedAt: Date.now(),
+    followers,
   }).run();
 
   // Update member count on community

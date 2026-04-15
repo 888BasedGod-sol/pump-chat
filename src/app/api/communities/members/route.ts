@@ -14,7 +14,11 @@ export async function GET(request: Request) {
   }
 
   const rows = await db
-    .select({ user: communityMembers.user, joinedAt: communityMembers.joinedAt })
+    .select({ 
+      user: communityMembers.user, 
+      joinedAt: communityMembers.joinedAt,
+      followers: communityMembers.followers,
+    })
     .from(communityMembers)
     .where(eq(communityMembers.communityTicker, ticker))
     .all();
