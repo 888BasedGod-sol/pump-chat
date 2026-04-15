@@ -28,6 +28,7 @@ function ConfettiBurst() {
             top: `${-5 - Math.random() * 10}%`,
             animation: `confetti-fall ${0.8 + Math.random() * 0.8}s ease-in forwards`,
             animationDelay: `${Math.random() * 0.3}s`,
+            willChange: 'transform, opacity',
           }}
         />
       ))}
@@ -166,6 +167,7 @@ export default function RaidCard({
       className={`relative overflow-hidden transition-all animate-fade-in ${urgencyRing} ${
         milestone ? "animate-milestone" : ""
       } ${isActive ? "bg-surface" : "bg-surface/40"}`}
+      style={{ contain: 'layout style' }}
     >
       {showConfetti && <ConfettiBurst />}
       {xpFloat && <XpFloat amount={XP_PER_ACTION} />}

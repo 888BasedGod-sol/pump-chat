@@ -19,10 +19,10 @@ export default function RaidPanel() {
   const [activeTab, setActiveTab] = useState<RaidTab>("active");
   const [expandedRaid, setExpandedRaid] = useState<number | null>(null);
 
-  // Tick every 15s to update countdown timers
+  // Tick every 30s to update countdown timers (less frequent to reduce re-renders)
   const [, setTick] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 15_000);
+    const interval = setInterval(() => setTick((t) => t + 1), 30_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -89,7 +89,7 @@ export default function RaidPanel() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-surface to-surface-hover">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 animate-pulse-glow">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
             <svg className="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
