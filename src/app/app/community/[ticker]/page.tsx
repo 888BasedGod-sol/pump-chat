@@ -450,6 +450,45 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
         </div>
       </div>
 
+      {/* ── Members bar (top of page) ── */}
+      <div className="border-b border-border bg-surface/50 hidden lg:block">
+        <div className="px-4 py-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <h3 className="text-[10px] uppercase tracking-wider text-text-muted font-medium">Members</h3>
+              <span className="text-[10px] text-accent font-bold">{members.length}</span>
+            </div>
+            <div className="flex-1 overflow-x-auto scrollbar-hide">
+              {members.length === 0 ? (
+                <span className="text-[10px] text-text-muted">No members yet — be the first to join!</span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {[...members]
+                    .sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0))
+                    .map((m) => (
+                    <a
+                      key={m.user}
+                      href={`https://x.com/${m.user.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-1 hover:border-accent/50 transition-colors shrink-0"
+                    >
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent text-[9px] font-bold">
+                        {m.user.charAt(1).toUpperCase()}
+                      </div>
+                      <span className="text-[10px] font-medium text-text-primary">{m.user}</span>
+                      {m.followers != null && m.followers > 0 && (
+                        <span className="text-[9px] text-text-muted">{fmtCompact(m.followers)}</span>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Mobile tab switcher ── */}
       <div className="flex border-b border-border bg-surface lg:hidden">
         {(["raids", "chat", "voice", "members"] as const).map((tab) => (
@@ -506,8 +545,8 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
               />
             </div>
 
-            {/* Members panel */}
-            <div className={`${mobileTab !== "members" ? "hidden lg:block" : ""}`}>
+            {/* Members panel (mobile only - desktop shows at top) */}
+            <div className={`${mobileTab !== "members" ? "hidden" : ""} lg:hidden`}>
               <div className="rounded-xl border border-border bg-surface overflow-hidden">
                 <div className="flex items-center justify-between border-b border-border px-3 py-2">
                   <h3 className="text-xs font-bold text-text-primary">Members</h3>

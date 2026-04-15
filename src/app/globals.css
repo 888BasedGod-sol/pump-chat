@@ -50,6 +50,15 @@ body {
   border-radius: 3px;
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Smooth fade-in for panels */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
