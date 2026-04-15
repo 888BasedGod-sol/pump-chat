@@ -65,6 +65,8 @@ export async function GET(req: NextRequest) {
       mint,
       balance,
       hasToken: balance > 0,
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=5, stale-while-revalidate=10" },
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

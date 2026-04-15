@@ -160,5 +160,7 @@ export async function GET(request: Request) {
     .where(eq(communityMembers.user, user))
     .all();
 
-  return NextResponse.json(rows.map((r) => r.communityTicker));
+  return NextResponse.json(rows.map((r) => r.communityTicker), {
+    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30" },
+  });
 }

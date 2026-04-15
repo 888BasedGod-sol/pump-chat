@@ -93,6 +93,7 @@ export const targetTweets = sqliteTable("target_tweets", {
   author: text("author").notNull(),           // @handle
   authorName: text("author_name"),             // display name from oEmbed
   authorAvatar: text("author_avatar"),         // profile pic
+  authorFollowers: integer("author_followers"), // follower count
   tweetText: text("tweet_text"),               // tweet content
   submittedBy: text("submitted_by").notNull(), // @handle of submitter
   submittedAt: integer("submitted_at").notNull(),

@@ -20,6 +20,11 @@ interface XUser {
   name: string;
   username: string;
   profile_image_url?: string;
+  public_metrics?: {
+    followers_count: number;
+    following_count: number;
+    tweet_count: number;
+  };
 }
 
 interface XTweet {
@@ -43,6 +48,7 @@ export interface FetchedTweet {
   authorUsername: string;
   authorName: string;
   authorAvatar: string;
+  authorFollowers: number;
   createdAt: number; // timestamp ms
   likes: number;
   retweets: number;
@@ -61,7 +67,7 @@ async function resolveUserIds(
   // Batch in groups of 100
   for (let i = 0; i < usernames.length; i += 100) {
     const batch = usernames.slice(i, i + 100);
-    const url = `${BASE}/users/by?usernames=${batch.join(",")}&user.fields=profile_image_url`;
+    const url = `${BASE}/users/by?usernames=${batch.join(",")}&user.fields=profile_image_url,public_metrics`;
     try {
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -158,6 +164,7 @@ export async function fetchTargetTweets(sinceIds?: Record<string, string>): Prom
     authorUsername: user.username,
     authorName: user.name,
     authorAvatar: user.profile_image_url?.replace("_normal", "_200x200") ?? `https://unavatar.io/twitter/${user.username}`,
+    authorFollowers: user.public_metrics?.followers_count ?? 0,
     createdAt: tweet.created_at ? new Date(tweet.created_at).getTime() : Date.now(),
     likes: tweet.public_metrics?.like_count ?? 0,
     retweets: tweet.public_metrics?.retweet_count ?? 0,

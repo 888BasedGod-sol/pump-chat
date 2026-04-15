@@ -136,6 +136,7 @@ function initDb() {
   client.execute("ALTER TABLE communities ADD COLUMN twitter TEXT").catch(() => {});
   client.execute("ALTER TABLE communities ADD COLUMN telegram TEXT").catch(() => {});
   client.execute("ALTER TABLE communities ADD COLUMN discord TEXT").catch(() => {});
+  client.execute("ALTER TABLE target_tweets ADD COLUMN author_followers INTEGER").catch(() => {});
 
   return db;
 }

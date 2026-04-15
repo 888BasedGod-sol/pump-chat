@@ -43,6 +43,8 @@ export async function GET(
       isGraduated: progressPercent >= 100,
       progressBps: progressPercent * 100,
       progressPercent,
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

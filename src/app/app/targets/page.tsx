@@ -13,6 +13,7 @@ interface Target {
   author: string;
   authorName?: string;
   authorAvatar?: string;
+  authorFollowers?: number;
   tweetText?: string;
   submittedAt: number;
   upvotes: number;
@@ -23,6 +24,13 @@ interface Target {
 type SortOption = "newest" | "top" | "hot";
 
 /* ---- Helpers ---- */
+function fmtFollowers(n: number | undefined): string {
+  if (!n) return "";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
@@ -164,6 +172,17 @@ export default function TargetsPage() {
     return map;
   }, [targets]);
 
+  const authorFollowersMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const t of targets) {
+      const handle = t.author.replace("@", "").toLowerCase();
+      if (t.authorFollowers && !map.has(handle)) {
+        map.set(handle, t.authorFollowers);
+      }
+    }
+    return map;
+  }, [targets]);
+
   // Filter + sort
   const sorted = useMemo(() => {
     let filtered = targets;
@@ -218,6 +237,7 @@ export default function TargetsPage() {
                 </button>
                 {TARGET_ACCOUNTS.map((handle) => {
                   const count = authorStats.get(handle.toLowerCase()) ?? 0;
+                  const followers = authorFollowersMap.get(handle.toLowerCase());
                   const isActive = filterAuthor?.toLowerCase() === handle.toLowerCase();
                   return (
                     <button
@@ -242,7 +262,12 @@ export default function TargetsPage() {
                           {handle[0]}
                         </span>
                       )}
-                      <span className="truncate">@{handle}</span>
+                      <div className="flex flex-col items-start min-w-0">
+                        <span className="truncate">@{handle}</span>
+                        {followers && (
+                          <span className="text-[9px] text-text-muted">{fmtFollowers(followers)} followers</span>
+                        )}
+                      </div>
                       {count > 0 && (
                         <span className="ml-auto shrink-0 rounded-full bg-surface-hover px-1.5 text-[9px] font-bold tabular-nums text-text-muted">
                           {count}
@@ -261,7 +286,7 @@ export default function TargetsPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-text-primary">targets</h1>
+              <h1 className="text-lg font-bold text-text-primary">Targets</h1>
               <p className="text-xs text-text-muted mt-0.5">
                 live feed from {TARGET_ACCOUNTS.length} monitored accounts
               </p>
@@ -331,7 +356,7 @@ export default function TargetsPage() {
           {loading ? (
             <div className="flex flex-col items-center py-16">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-              <p className="mt-3 text-xs text-text-muted">loading targets...</p>
+              <p className="mt-3 text-xs text-text-muted">Loading targets...</p>
             </div>
           ) : noApiKey ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 text-center">
@@ -533,6 +558,11 @@ function TargetCard({
               >
                 {target.author}
               </a>
+              {target.authorFollowers && (
+                <span className="text-[9px] text-text-muted/70">
+                  · {fmtFollowers(target.authorFollowers)} followers
+                </span>
+              )}
             </div>
             <span className="ml-auto shrink-0 text-[10px] text-text-muted">
               {timeAgo(target.submittedAt)}

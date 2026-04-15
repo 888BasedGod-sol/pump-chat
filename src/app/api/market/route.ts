@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
     const mintKey = mints.sort().join(",");
     const now = Date.now();
     if (cachedData && cachedMintSet === mintKey && now - cacheTimestamp < CACHE_TTL_MS) {
-      return NextResponse.json({ data: Object.fromEntries(cachedData), cached: true });
+      return NextResponse.json({ data: Object.fromEntries(cachedData), cached: true }, {
+        headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
+      });
     }
 
     const result = new Map<string, Record<string, unknown>>();
@@ -130,7 +132,9 @@ export async function POST(request: NextRequest) {
     cacheTimestamp = now;
     cachedMintSet = mintKey;
 
-    return NextResponse.json({ data: Object.fromEntries(result) });
+    return NextResponse.json({ data: Object.fromEntries(result) }, {
+      headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

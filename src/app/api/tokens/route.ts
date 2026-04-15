@@ -123,7 +123,9 @@ export async function GET() {
     // Return cached data if still fresh
     const now = Date.now();
     if (cachedTokens && now - cacheTimestamp < CACHE_TTL_MS) {
-      return NextResponse.json({ tokens: cachedTokens, count: cachedTokens.length, cached: true });
+      return NextResponse.json({ tokens: cachedTokens, count: cachedTokens.length, cached: true }, {
+        headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30" },
+      });
     }
 
     const PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
@@ -313,7 +315,9 @@ export async function GET() {
     cachedTokens = result;
     cacheTimestamp = Date.now();
 
-    return NextResponse.json({ tokens: result, count: result.length });
+    return NextResponse.json({ tokens: result, count: result.length }, {
+      headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30" },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to fetch tokens:", message);

@@ -24,7 +24,9 @@ export async function GET(request: Request) {
     .where(eq(communityOwners.communityTicker, ticker))
     .all();
 
-  return NextResponse.json(owners);
+  return NextResponse.json(owners, {
+    headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" },
+  });
 }
 
 // POST: claim ownership of a community (requires X auth + wallet with token balance)

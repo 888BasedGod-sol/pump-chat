@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { communities } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { SOLANA_RPC_URL } from "@/lib/solana";
+import { PublicKey } from "@solana/web3.js";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,14 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   const mint = request.nextUrl.searchParams.get("mint")?.trim();
-  if (!mint || mint.length < 32 || mint.length > 50) {
+  if (!mint) {
+    return NextResponse.json({ error: "Invalid mint address" }, { status: 400 });
+  }
+
+  // Validate Solana address format
+  try {
+    new PublicKey(mint);
+  } catch {
     return NextResponse.json({ error: "Invalid mint address" }, { status: 400 });
   }
 
@@ -25,7 +33,9 @@ export async function GET(request: NextRequest) {
     .get();
 
   if (existing) {
-    return NextResponse.json(existing);
+    return NextResponse.json(existing, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+    });
   }
 
   // Look up token metadata from Helius DAS
@@ -40,6 +50,7 @@ export async function GET(request: NextRequest) {
         params: { id: mint },
       }),
       signal: AbortSignal.timeout(10000),
+      next: { revalidate: 3600 }, // Cache metadata for 1 hour
     });
     const data = await res.json();
     const asset = data?.result;
@@ -67,20 +78,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Could not determine token ticker" }, { status: 404 });
     }
 
-    // Check if ticker already exists (different mint, same ticker)
-    const tickerExists = await db
+    // Check if mint or ticker already exists (handles race conditions)
+    const conflict = await db
       .select()
       .from(communities)
-      .where(eq(communities.ticker, ticker))
+      .where(or(eq(communities.mint, mint), eq(communities.ticker, ticker)))
       .get();
 
-    if (tickerExists) {
-      // Update mint if needed and return
-      return NextResponse.json(tickerExists);
+    if (conflict) {
+      return NextResponse.json(conflict, {
+        headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+      });
     }
 
-    // Create the community
-    await db
+    // Create the community with conflict handling for race conditions
+    const [created] = await db
       .insert(communities)
       .values({
         ticker,
@@ -89,16 +101,28 @@ export async function GET(request: NextRequest) {
         image: optimizedImage || null,
         members: 0,
       })
-      .run();
+      .onConflictDoNothing()
+      .returning();
 
-    const created = await db
-      .select()
-      .from(communities)
-      .where(eq(communities.ticker, ticker))
-      .get();
+    // If insert was skipped due to conflict, fetch the existing record
+    if (!created) {
+      const existing = await db
+        .select()
+        .from(communities)
+        .where(eq(communities.mint, mint))
+        .get();
+      return NextResponse.json(existing, {
+        headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+      });
+    }
 
-    return NextResponse.json(created);
+    return NextResponse.json(created, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+    });
   } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      return NextResponse.json({ error: "RPC timeout" }, { status: 504 });
+    }
     console.error("Community lookup failed:", err);
     return NextResponse.json({ error: "Failed to look up token" }, { status: 500 });
   }
