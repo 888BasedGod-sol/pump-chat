@@ -45,7 +45,7 @@ function timeAgo(ts: number | null | undefined): string {
   return `${days}d ago`;
 }
 
-type FilterTab = "all" | "graduated" | "bonding" | "joined";
+type FilterTab = "all" | "joined";
 type SortOption = "active" | "mcap" | "newest" | "members";
 
 export default function CommunitiesPage() {
@@ -102,8 +102,6 @@ export default function CommunitiesPage() {
           if (!match) return false;
         }
         // Tab filter
-        if (filterTab === "graduated" && !c.complete) return false;
-        if (filterTab === "bonding" && c.complete !== false) return false;
         if (filterTab === "joined" && !joinedCommunities.has(c.ticker)) return false;
         // Min mcap gate (skip when searching or on "joined" tab)
         if (!q && filterTab !== "joined") {
@@ -160,19 +158,15 @@ export default function CommunitiesPage() {
 
   // Tab counts
   const tabCounts = useMemo(() => {
-    let graduated = 0, bonding = 0, joined = 0;
+    let joined = 0;
     for (const c of communities) {
-      if (c.complete) graduated++;
-      if (c.complete === false) bonding++;
       if (joinedCommunities.has(c.ticker)) joined++;
     }
-    return { graduated, bonding, joined };
+    return { joined };
   }, [communities, joinedCommunities]);
 
   const filterTabs: { key: FilterTab; label: string; count?: number }[] = [
     { key: "all", label: "all" },
-    { key: "graduated", label: "graduated", count: tabCounts.graduated },
-    { key: "bonding", label: "bonding", count: tabCounts.bonding },
     { key: "joined", label: "joined", count: tabCounts.joined },
   ];
 
