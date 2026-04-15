@@ -536,7 +536,7 @@ export default function CommunityPage({ params }: { params: Promise<{ ticker: st
               <VoiceRoom ticker={community.ticker} communityName={community.name} />
             </div>
 
-            {/* Leader Vote */}
+            {/* Community Lead Voting Panel */}
             <div className={`${mobileTab !== "members" ? "hidden lg:block" : ""}`}>
               <LeaderVote
                 ticker={community.ticker}

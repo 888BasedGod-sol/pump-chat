@@ -84,7 +84,7 @@ export default function LeaderVote({
           <svg className="h-3.5 w-3.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h3 className="text-xs font-bold text-text-primary">Community Leader Vote</h3>
+          <h3 className="text-xs font-bold text-text-primary">Community Lead Voting Panel</h3>
         </div>
         <span className="text-[10px] text-text-muted">{totalVotes} vote{totalVotes !== 1 ? "s" : ""}</span>
       </div>
