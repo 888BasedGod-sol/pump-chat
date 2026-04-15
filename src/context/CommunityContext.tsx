@@ -255,64 +255,73 @@ export function CommunityProvider({
   useEffect(() => {
     async function hydrate() {
       try {
-        const [commRes, msgRes, raidRes, engRes] = await Promise.all([
-          fetch("/api/communities").then((r) => r.json()).catch(() => []),
-          fetch("/api/messages").then((r) => r.json()).catch(() => []),
-          fetch("/api/raids" + (username !== "anon" ? `?user=${encodeURIComponent(username)}` : "")).then((r) => r.json()).catch(() => []),
-          fetch("/api/engagements").then((r) => r.json()).catch(() => []),
-        ]);
+        // Use consolidated endpoint for faster initial load (1 request instead of 4)
+        const initUrl = `/api/init${username !== "anon" ? `?user=${encodeURIComponent(username)}` : ""}`;
+        const initRes = await fetch(initUrl);
+        
+        if (initRes.ok) {
+          const data = await initRes.json();
+          
+          if (Array.isArray(data.communities) && data.communities.length > 0) {
+            setCommunities(data.communities);
+            communitiesLoaded.current = true;
 
-        if (Array.isArray(commRes) && commRes.length > 0) {
-          const mapped = commRes.map((r: Record<string, unknown>) => ({
-            ticker: r.ticker as string,
-            name: r.name as string,
-            mint: r.mint as string,
-            members: (r.members as number) ?? 0,
-            active: r.active !== false,
-            image: (r.image as string) || undefined,
-            marketCapSol: (r.marketCapSol as number) || undefined,
-            complete: r.complete != null ? (r.complete as boolean) : undefined,
-          }));
-          setCommunities(mapped);
-
-          // If many communities lack images, trigger a background backfill
-          const missingImages = mapped.filter((c) => !c.image).length;
-          if (missingImages > 5) {
-            fetch("/api/communities/backfill", { method: "POST" })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.updated > 0) {
-                  // Re-fetch communities to pick up backfilled images
-                  fetch("/api/communities").then((r) => r.json()).then((fresh) => {
-                    if (Array.isArray(fresh) && fresh.length > 0) {
-                      setCommunities((prev) =>
-                        prev.map((c) => {
-                          const f = fresh.find((fc: Record<string, unknown>) => fc.ticker === c.ticker);
-                          if (f?.image && !c.image) return { ...c, image: f.image as string };
-                          return c;
-                        })
-                      );
-                    }
-                  }).catch(() => {});
-                }
+            // Trigger market enrichment immediately (non-blocking)
+            const mints = data.communities.filter((c: Community) => c.mint).map((c: Community) => c.mint);
+            if (mints.length > 0) {
+              fetch("/api/market", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mints: mints.slice(0, 100) }),
               })
-              .catch(() => {});
+                .then((r) => r.json())
+                .then(({ data: marketData }) => {
+                  if (!marketData) return;
+                  setCommunities((prev) =>
+                    prev.map((c) => {
+                      const d = marketData[c.mint];
+                      if (!d) return c;
+                      return {
+                        ...c,
+                        priceUsd: d.priceUsd ?? c.priceUsd,
+                        priceChange24h: d.priceChange24h ?? c.priceChange24h,
+                        volume24h: d.volume24h ?? c.volume24h,
+                        liquidity: d.liquidity ?? c.liquidity,
+                        fdv: d.fdv ?? c.fdv,
+                        pairUrl: d.pairUrl ?? c.pairUrl,
+                        txns24h: d.txns24h ?? c.txns24h,
+                        tokenCreatedAt: d.createdAt ?? c.tokenCreatedAt,
+                        image: d.image || c.image,
+                        holders: d.holders ?? c.holders,
+                      };
+                    })
+                  );
+                  marketEnrichmentDone.current = true;
+                })
+                .catch(() => {});
+            }
+
+            // Background backfill for missing images
+            const missingImages = data.communities.filter((c: Community) => !c.image).length;
+            if (missingImages > 5) {
+              fetch("/api/communities/backfill", { method: "POST" }).catch(() => {});
+            }
+          }
+          
+          if (Array.isArray(data.messages) && data.messages.length > 0) {
+            setMessages(data.messages);
+            setNextMsgId(Math.max(...data.messages.map((m: { id: number }) => m.id)) + 1);
+          }
+          
+          if (Array.isArray(data.raids) && data.raids.length > 0) {
+            setRaids(data.raids);
+            setNextRaidId(Math.max(...data.raids.map((r: { id: number }) => r.id)) + 1);
+          }
+          
+          if (Array.isArray(data.engagements) && data.engagements.length > 0) {
+            setEngagements(data.engagements);
           }
         }
-        communitiesLoaded.current = true;
-        if (Array.isArray(msgRes) && msgRes.length > 0) {
-          setMessages(msgRes);
-          setNextMsgId(Math.max(...msgRes.map((m: { id: number }) => m.id)) + 1);
-        }
-        if (Array.isArray(raidRes) && raidRes.length > 0) {
-          setRaids(raidRes);
-          setNextRaidId(Math.max(...raidRes.map((r: { id: number }) => r.id)) + 1);
-        }
-        if (Array.isArray(engRes) && engRes.length > 0) {
-          setEngagements(engRes);
-        }
-
-        // Joined communities are fetched in a separate effect keyed on username
       } catch {
         // hydration failed — app works with empty state
       } finally {
@@ -320,7 +329,7 @@ export function CommunityProvider({
       }
     }
     hydrate();
-  }, []);
+  }, [username]);
 
   /* -- fetch joined communities when username becomes available ---- */
   useEffect(() => {
@@ -406,17 +415,21 @@ export function CommunityProvider({
       }
     };
 
-    const interval = setInterval(poll, 3000);
+    const interval = setInterval(poll, 2000); // Poll every 2s for faster chat
     return () => clearInterval(interval);
   }, [isLoading, selectedCommunity, communities]);
 
   /* -- enrich communities with DexScreener market data ------------ */
   const marketEnrichmentDone = useRef(false);
   useEffect(() => {
+    // Skip if already done during hydration or still loading
     if (isLoading || marketEnrichmentDone.current) return;
     // Only enrich communities that lack price data
     const needEnrichment = communities.filter((c) => c.mint && c.priceUsd == null);
-    if (needEnrichment.length === 0) return;
+    if (needEnrichment.length === 0) {
+      marketEnrichmentDone.current = true;
+      return;
+    }
     marketEnrichmentDone.current = true;
 
     const mints = needEnrichment.map((c) => c.mint);
