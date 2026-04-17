@@ -132,9 +132,14 @@ export default function CommunitiesPage() {
       });
   }, [communities, communityStats, communityLeaders, deferredSearch, joinedCommunities, filterTab, sortBy]);
 
-  // Contract address detection
+  // Contract address detection - use immediate search for consistency
   const searchIsAddress = searchQuery ? isSolanaAddress(searchQuery) : false;
-  const hasLocalMatch = searchIsAddress && enriched.length > 0;
+  // Check local match directly (not using deferred enriched to avoid race conditions)
+  const hasLocalMatch = useMemo(() => {
+    if (!searchIsAddress) return false;
+    const q = searchQuery.toLowerCase();
+    return communities.some((c) => c.mint.toLowerCase() === q);
+  }, [searchIsAddress, searchQuery, communities]);
 
   const handleLookup = useCallback(() => {
     if (!searchQuery || lookingUp) return;
@@ -272,12 +277,7 @@ export default function CommunitiesPage() {
       {/* ── Contract address lookup banner ── */}
       {searchIsAddress && (
         <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 flex items-center gap-3">
-          {lookingUp ? (
-            <>
-              <div className="h-5 w-5 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent shrink-0" />
-              <p className="text-sm text-text-secondary">looking up token on-chain...</p>
-            </>
-          ) : lookupError ? (
+          {lookupError ? (
             <>
               <svg className="h-5 w-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -294,7 +294,12 @@ export default function CommunitiesPage() {
               </svg>
               <p className="text-sm text-text-secondary flex-1">community found</p>
             </>
-          ) : null}
+          ) : (
+            <>
+              <div className="h-5 w-5 animate-smooth-spin rounded-full border-2 border-accent border-t-transparent shrink-0" />
+              <p className="text-sm text-text-secondary">looking up token on-chain...</p>
+            </>
+          )}
         </div>
       )}
 
