@@ -8,6 +8,7 @@ import { useCallback } from "react";
 export default function CommunityProviderWrapper({ children }: { children: ReactNode }) {
   const privy = usePrivySafe();
 
+  const ready = privy?.ready ?? false;
   const user = privy?.user;
   const getAccessTokenFn = privy?.getAccessToken;
 
@@ -28,6 +29,7 @@ export default function CommunityProviderWrapper({ children }: { children: React
       xUsername={xUsername ?? null}
       xId={xId ?? null}
       getAccessToken={getAuthToken}
+      authReady={ready}
     >
       {children}
     </CommunityProvider>

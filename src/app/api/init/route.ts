@@ -84,6 +84,11 @@ export async function GET(request: NextRequest) {
     discord: c.discord || undefined,
   }));
 
+  // Use private caching for user-specific requests, public for anonymous
+  const cacheControl = user 
+    ? "private, no-cache, must-revalidate"
+    : "public, s-maxage=10, stale-while-revalidate=30";
+
   return NextResponse.json({
     communities: mappedCommunities,
     messages: mappedMessages,
@@ -91,7 +96,7 @@ export async function GET(request: NextRequest) {
     engagements: engRows,
   }, {
     headers: { 
-      "Cache-Control": "public, s-maxage=5, stale-while-revalidate=15",
+      "Cache-Control": cacheControl,
     },
   });
 }

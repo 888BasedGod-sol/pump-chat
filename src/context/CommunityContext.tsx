@@ -218,11 +218,13 @@ export function CommunityProvider({
   xUsername,
   xId,
   getAccessToken,
+  authReady = false,
 }: {
   children: ReactNode;
   xUsername?: string | null;
   xId?: string | null;
   getAccessToken?: () => Promise<string | null>;
+  authReady?: boolean;
 }) {
   // X account is primary identity; fall back to anon
   const isSignedIn = !!xUsername;
@@ -248,23 +250,31 @@ export function CommunityProvider({
   const [nextRaidId, setNextRaidId] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [joinedCommunities, setJoinedCommunities] = useState<Set<string>>(new Set());
-  const communitiesLoaded = useRef(false);
+  const hydratedRef = useRef(false);
   const lastEngageRef = useRef(0); // timestamp of last engagement, used to skip polls during PATCH
 
-  /* -- hydrate from DB on mount ----------------------------------- */
+  /* -- hydrate from DB once auth is ready ------------------------- */
   useEffect(() => {
+    // Wait for auth to be ready before fetching
+    if (!authReady) return;
+    // Only hydrate once per session
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+
     async function hydrate() {
       try {
         // Use consolidated endpoint for faster initial load (1 request instead of 4)
+        // Add cache-busting timestamp to ensure fresh data
         const initUrl = `/api/init${username !== "anon" ? `?user=${encodeURIComponent(username)}` : ""}`;
-        const initRes = await fetch(initUrl);
+        const initRes = await fetch(initUrl, {
+          cache: "no-store", // Bypass browser cache for initial load
+        });
         
         if (initRes.ok) {
           const data = await initRes.json();
           
           if (Array.isArray(data.communities) && data.communities.length > 0) {
             setCommunities(data.communities);
-            communitiesLoaded.current = true;
 
             // Trigger market enrichment immediately (non-blocking)
             const mints = data.communities.filter((c: Community) => c.mint).map((c: Community) => c.mint);
@@ -329,15 +339,17 @@ export function CommunityProvider({
       }
     }
     hydrate();
-  }, [username]);
+  }, [authReady, username]);
 
   /* -- fetch joined communities when username becomes available ---- */
   useEffect(() => {
-    if (username === "anon") return;
+    if (!authReady || username === "anon") return;
     let cancelled = false;
     (async () => {
       try {
-        const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`);
+        const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`, {
+          cache: "no-store",
+        });
         if (joinedRes.ok && !cancelled) {
           const tickers: string[] = await joinedRes.json();
           if (Array.isArray(tickers)) {
@@ -349,7 +361,7 @@ export function CommunityProvider({
       }
     })();
     return () => { cancelled = true; };
-  }, [username]);
+  }, [authReady, username]);
 
   /* -- fetch fresh raids from server ------------------------------- */
   const fetchRaids = useCallback(async () => {
