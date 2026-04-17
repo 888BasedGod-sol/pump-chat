@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, useCallback, useDeferredValue, useRef } from "react";
+import { useMemo, useEffect, useState, useCallback, useDeferredValue } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
@@ -53,6 +53,7 @@ export default function CommunitiesPage() {
   const router = useRouter();
   const [lookingUp, setLookingUp] = useState(false);
   const [lookupError, setLookupError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [sortBy, setSortBy] = useState<SortOption>("active");
 
@@ -138,51 +139,65 @@ export default function CommunitiesPage() {
     return communities.some((c) => c.mint.toLowerCase() === q);
   }, [searchIsAddress, searchQuery, communities]);
 
-  // Track which address we've already looked up to prevent duplicate requests
-  const lastLookupRef = useRef<string | null>(null);
-
-  const handleLookup = useCallback(async () => {
-    const addr = searchQuery?.trim();
-    if (!addr || lookingUp) return;
-    
-    // Prevent duplicate lookups for the same address
-    if (lastLookupRef.current === addr) return;
-    lastLookupRef.current = addr;
-    
-    setLookupError("");
-    setLookingUp(true);
-    
-    try {
-      const res = await fetch(`/api/communities/lookup?mint=${encodeURIComponent(addr)}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "not found");
-      }
-      const data = await res.json();
-      if (data?.ticker) {
-        router.push(`/app/community/${data.ticker}`);
-      } else {
-        setLookupError("Token not found on-chain");
-      }
-    } catch (e) {
-      setLookupError(e instanceof Error ? e.message : "Could not find this token");
-    } finally {
+  // Single unified lookup effect - handles everything in one place
+  useEffect(() => {
+    // Only proceed if it's an address and we don't have it locally
+    if (!searchIsAddress || hasLocalMatch) {
       setLookingUp(false);
+      setLookupError("");
+      return;
     }
-  }, [searchQuery, lookingUp, router]);
 
-  // Reset lookup ref when search changes
-  useEffect(() => {
-    lastLookupRef.current = null;
-    setLookupError("");
-  }, [searchQuery]);
+    const addr = searchQuery.trim();
+    let cancelled = false;
 
-  // Auto-trigger lookup for addresses with no local match
-  useEffect(() => {
-    if (searchIsAddress && !hasLocalMatch && !lookingUp && !lookupError && lastLookupRef.current !== searchQuery?.trim()) {
-      handleLookup();
+    async function doLookup() {
+      setLookupError("");
+      setLookingUp(true);
+
+      try {
+        const res = await fetch(`/api/communities/lookup?mint=${encodeURIComponent(addr)}`, {
+          signal: AbortSignal.timeout(15000),
+        });
+        
+        if (cancelled) return;
+        
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Token not found");
+        }
+        
+        const data = await res.json();
+        if (cancelled) return;
+        
+        if (data?.ticker) {
+          router.push(`/app/community/${data.ticker}`);
+        } else {
+          setLookupError("Token not found on-chain");
+        }
+      } catch (e) {
+        if (cancelled) return;
+        if (e instanceof DOMException && e.name === "TimeoutError") {
+          setLookupError("Request timed out - try again");
+        } else {
+          setLookupError(e instanceof Error ? e.message : "Could not find this token");
+        }
+      } finally {
+        if (!cancelled) setLookingUp(false);
+      }
     }
-  }, [searchIsAddress, hasLocalMatch, lookingUp, lookupError, searchQuery, handleLookup]);
+
+    doLookup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchIsAddress, hasLocalMatch, searchQuery, router, retryCount]);
+
+  // Manual retry handler
+  const handleRetry = useCallback(() => {
+    setRetryCount((c) => c + 1);
+  }, []);
 
   // Tab counts
   const tabCounts = useMemo(() => {
@@ -302,7 +317,7 @@ export default function CommunitiesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <p className="text-sm text-text-muted flex-1">{lookupError}</p>
-              <button onClick={handleLookup} className="text-xs font-bold text-accent hover:underline shrink-0">
+              <button onClick={handleRetry} className="text-xs font-bold text-accent hover:underline shrink-0">
                 retry
               </button>
             </>
