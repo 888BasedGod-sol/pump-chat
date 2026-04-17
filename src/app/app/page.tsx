@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, useCallback, useDeferredValue } from "react";
+import { useMemo, useEffect, useState, useCallback, useDeferredValue, useRef } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
@@ -62,9 +62,6 @@ export default function CommunitiesPage() {
 
   // Detect Solana address (base58, 32-50 chars)
   const isSolanaAddress = useCallback((q: string) => /^[1-9A-HJ-NP-Za-km-z]{32,50}$/.test(q.trim()), []);
-
-  // Reset lookup error when search changes
-  useEffect(() => { setLookupError(""); }, [searchQuery]);
 
   // Build stats per community
   const communityStats = useMemo(() => {
@@ -141,29 +138,51 @@ export default function CommunitiesPage() {
     return communities.some((c) => c.mint.toLowerCase() === q);
   }, [searchIsAddress, searchQuery, communities]);
 
-  const handleLookup = useCallback(() => {
-    if (!searchQuery || lookingUp) return;
+  // Track which address we've already looked up to prevent duplicate requests
+  const lastLookupRef = useRef<string | null>(null);
+
+  const handleLookup = useCallback(async () => {
+    const addr = searchQuery?.trim();
+    if (!addr || lookingUp) return;
+    
+    // Prevent duplicate lookups for the same address
+    if (lastLookupRef.current === addr) return;
+    lastLookupRef.current = addr;
+    
     setLookupError("");
     setLookingUp(true);
-    fetch(`/api/communities/lookup?mint=${encodeURIComponent(searchQuery.trim())}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("not found");
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.ticker) router.push(`/app/community/${data.ticker}`);
-        else setLookupError("Token not found on-chain");
-      })
-      .catch(() => setLookupError("Could not find this token"))
-      .finally(() => setLookingUp(false));
+    
+    try {
+      const res = await fetch(`/api/communities/lookup?mint=${encodeURIComponent(addr)}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "not found");
+      }
+      const data = await res.json();
+      if (data?.ticker) {
+        router.push(`/app/community/${data.ticker}`);
+      } else {
+        setLookupError("Token not found on-chain");
+      }
+    } catch (e) {
+      setLookupError(e instanceof Error ? e.message : "Could not find this token");
+    } finally {
+      setLookingUp(false);
+    }
   }, [searchQuery, lookingUp, router]);
+
+  // Reset lookup ref when search changes
+  useEffect(() => {
+    lastLookupRef.current = null;
+    setLookupError("");
+  }, [searchQuery]);
 
   // Auto-trigger lookup for addresses with no local match
   useEffect(() => {
-    if (searchIsAddress && !hasLocalMatch && !lookingUp && !lookupError) {
+    if (searchIsAddress && !hasLocalMatch && !lookingUp && !lookupError && lastLookupRef.current !== searchQuery?.trim()) {
       handleLookup();
     }
-  }, [searchIsAddress, hasLocalMatch, lookingUp, lookupError, handleLookup]);
+  }, [searchIsAddress, hasLocalMatch, lookingUp, lookupError, searchQuery, handleLookup]);
 
   // Tab counts
   const tabCounts = useMemo(() => {
