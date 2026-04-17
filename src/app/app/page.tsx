@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useMemo, useEffect, useState, useCallback, useDeferredValue } from "react";
 import { useCommunity } from "@/context/CommunityContext";
 import TokenImage from "@/components/TokenImage";
 import Link from "next/link";
@@ -56,6 +56,10 @@ export default function CommunitiesPage() {
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [sortBy, setSortBy] = useState<SortOption>("active");
 
+  // Defer search for non-blocking filtering
+  const deferredSearch = useDeferredValue(searchQuery);
+  const isStale = deferredSearch !== searchQuery;
+
   // Detect Solana address (base58, 32-50 chars)
   const isSolanaAddress = useCallback((q: string) => /^[1-9A-HJ-NP-Za-km-z]{32,50}$/.test(q.trim()), []);
 
@@ -77,10 +81,10 @@ export default function CommunitiesPage() {
     return stats;
   }, [messages, raids]);
 
-  // Enrich, filter, sort
+  // Enrich, filter, sort (uses deferred search for non-blocking filtering)
   const enriched = useMemo(() => {
     const MIN_MCAP_USD = 3000;
-    const q = searchQuery?.toLowerCase() ?? "";
+    const q = deferredSearch?.toLowerCase() ?? "";
 
     return communities
       .map((c) => {
@@ -126,7 +130,7 @@ export default function CommunitiesPage() {
             return b.score - a.score || b.msgCount - a.msgCount || b.raidCount - a.raidCount || b.members - a.members;
         }
       });
-  }, [communities, communityStats, communityLeaders, searchQuery, joinedCommunities, filterTab, sortBy]);
+  }, [communities, communityStats, communityLeaders, deferredSearch, joinedCommunities, filterTab, sortBy]);
 
   // Contract address detection
   const searchIsAddress = searchQuery ? isSolanaAddress(searchQuery) : false;
@@ -177,11 +181,12 @@ export default function CommunitiesPage() {
     { key: "members", label: "members" },
   ];
 
-  const renderCard = (c: (typeof enriched)[number]) => (
+  const renderCard = (c: (typeof enriched)[number], index: number) => (
     <Link
       key={c.ticker}
       href={`/app/community/${c.ticker}`}
-      className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/50 hover:bg-surface-hover hover:shadow-[0_0_20px_-5px_var(--color-accent-glow)]"
+      className="group relative flex flex-col rounded-xl border border-border bg-surface overflow-hidden transition-all hover:border-accent/50 hover:bg-surface-hover hover:shadow-[0_0_20px_-5px_var(--color-accent-glow)] animate-card-in"
+      style={{ animationDelay: `${Math.min(index * 20, 200)}ms` }}
     >
       {/* Subtle top accent line */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent group-hover:via-accent/60 transition-all" />
@@ -361,8 +366,8 @@ export default function CommunitiesPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-          {enriched.map((c) => renderCard(c))}
+        <div className={`grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-100 ${isStale ? "opacity-60" : ""}`}>
+          {enriched.map((c, i) => renderCard(c, i))}
         </div>
       )}
     </div>
