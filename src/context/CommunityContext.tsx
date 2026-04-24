@@ -35,6 +35,8 @@ export interface Community {
   twitter?: string | null;
   telegram?: string | null;
   discord?: string | null;
+  bondingProgress?: number;
+  printrTokenId?: string | null;
 }
 
 export interface ChatMessage {
@@ -106,7 +108,7 @@ export interface Engagement {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const RAID_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const RAID_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 
 export function getRaidTimeLeft(raid: Raid): string {
   const elapsed = Date.now() - raid.createdAt;
@@ -163,6 +165,12 @@ const SEED_RAIDS: Raid[] = [];
 /*  Context value                                                      */
 /* ------------------------------------------------------------------ */
 
+interface CommunityPageData {
+  community: Community;
+  members: { user: string; joinedAt: number; followers?: number | null; profileImage?: string | null }[];
+  votes: { candidate: string; votes: number }[];
+}
+
 interface CommunityCtx {
   /* data */
   communities: Community[];
@@ -180,6 +188,7 @@ interface CommunityCtx {
 
   /* identity */
   username: string;
+  userProfileImage: string | null;
   isSignedIn: boolean;
 
   /* loading */
@@ -199,6 +208,8 @@ interface CommunityCtx {
   syncTokenCommunities: (tokens: Array<{ address: string; name: string; symbol: string; image?: string; marketCapSol?: number; progressPercent?: number; complete?: boolean; realSolReserves?: number; tokenTotalSupply?: string; priceUsd?: number | null; priceChange24h?: number | null; volume24h?: number | null; liquidity?: number | null; fdv?: number | null; pairUrl?: string | null; txns24h?: { buys: number; sells: number } | null; createdAt?: number | null }>) => void;
   joinCommunity: (ticker: string) => Promise<void>;
   leaveCommunity: (ticker: string) => Promise<void>;
+  getCommunityData: (ticker: string) => CommunityPageData | null;
+  fetchCommunityData: (ticker: string) => Promise<CommunityPageData | null>;
 }
 
 const CommunityContext = createContext<CommunityCtx | null>(null);
@@ -217,18 +228,36 @@ export function CommunityProvider({
   children,
   xUsername,
   xId,
+  xProfileImage,
+  authReady,
   getAccessToken,
-  authReady = false,
 }: {
   children: ReactNode;
   xUsername?: string | null;
   xId?: string | null;
-  getAccessToken?: () => Promise<string | null>;
+  xProfileImage?: string | null;
   authReady?: boolean;
+  getAccessToken?: () => Promise<string | null>;
 }) {
-  // X account is primary identity; fall back to anon
+  // X account is primary identity; otherwise use a persistent anon handle stored in localStorage
   const isSignedIn = !!xUsername;
-  const username = xUsername ? `@${xUsername}` : "anon";
+  const [anonId, setAnonId] = useState<string>("anon");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      let id = window.localStorage.getItem("pump_chat_anon_id");
+      if (!id || !/^anon_[A-Za-z0-9]{6}$/.test(id)) {
+        const rand = Math.random().toString(36).slice(2, 8).padEnd(6, "0");
+        id = `anon_${rand}`;
+        window.localStorage.setItem("pump_chat_anon_id", id);
+      }
+      setAnonId(id);
+    } catch {
+      // localStorage unavailable — keep default
+    }
+  }, []);
+  const username = xUsername ? `@${xUsername}` : anonId;
+  const userProfileImage = xProfileImage ?? null;
   const [communities, setCommunities] = useState<Community[]>(SEED_COMMUNITIES);
   const [selectedCommunity, setSelectedCommunity] = useState("all");
   const [messages, setMessages] = useState<ChatMessage[]>(SEED_MESSAGES);
@@ -246,35 +275,28 @@ export function CommunityProvider({
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<"24h" | "7d" | "all">("24h");
   const [leaderboardMode, setLeaderboardMode] = useState<"communities" | "users">("communities");
   const [searchQuery, setSearchQuery] = useState("");
-  const [nextMsgId, setNextMsgId] = useState(1);
+  // Optimistic message IDs are negative so they never collide with server-assigned positive IDs.
+  const optimisticMsgIdRef = useRef(-1);
   const [nextRaidId, setNextRaidId] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [joinedCommunities, setJoinedCommunities] = useState<Set<string>>(new Set());
-  const hydratedRef = useRef(false);
+  const communitiesLoaded = useRef(false);
   const lastEngageRef = useRef(0); // timestamp of last engagement, used to skip polls during PATCH
 
-  /* -- hydrate from DB once auth is ready ------------------------- */
+  /* -- hydrate from DB on mount ----------------------------------- */
   useEffect(() => {
-    // Wait for auth to be ready before fetching
-    if (!authReady) return;
-    // Only hydrate once per session
-    if (hydratedRef.current) return;
-    hydratedRef.current = true;
-
     async function hydrate() {
       try {
         // Use consolidated endpoint for faster initial load (1 request instead of 4)
-        // Add cache-busting timestamp to ensure fresh data
         const initUrl = `/api/init${username !== "anon" ? `?user=${encodeURIComponent(username)}` : ""}`;
-        const initRes = await fetch(initUrl, {
-          cache: "no-store", // Bypass browser cache for initial load
-        });
+        const initRes = await fetch(initUrl);
         
         if (initRes.ok) {
           const data = await initRes.json();
           
           if (Array.isArray(data.communities) && data.communities.length > 0) {
             setCommunities(data.communities);
+            communitiesLoaded.current = true;
 
             // Trigger market enrichment immediately (non-blocking)
             const mints = data.communities.filter((c: Community) => c.mint).map((c: Community) => c.mint);
@@ -320,7 +342,6 @@ export function CommunityProvider({
           
           if (Array.isArray(data.messages) && data.messages.length > 0) {
             setMessages(data.messages);
-            setNextMsgId(Math.max(...data.messages.map((m: { id: number }) => m.id)) + 1);
           }
           
           if (Array.isArray(data.raids) && data.raids.length > 0) {
@@ -339,17 +360,15 @@ export function CommunityProvider({
       }
     }
     hydrate();
-  }, [authReady, username]);
+  }, [username]);
 
   /* -- fetch joined communities when username becomes available ---- */
   useEffect(() => {
-    if (!authReady || username === "anon") return;
+    if (username === "anon") return;
     let cancelled = false;
     (async () => {
       try {
-        const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`, {
-          cache: "no-store",
-        });
+        const joinedRes = await fetch(`/api/communities/join?user=${encodeURIComponent(username)}`);
         if (joinedRes.ok && !cancelled) {
           const tickers: string[] = await joinedRes.json();
           if (Array.isArray(tickers)) {
@@ -361,7 +380,7 @@ export function CommunityProvider({
       }
     })();
     return () => { cancelled = true; };
-  }, [authReady, username]);
+  }, [username]);
 
   /* -- fetch fresh raids from server ------------------------------- */
   const fetchRaids = useCallback(async () => {
@@ -390,24 +409,35 @@ export function CommunityProvider({
     return () => clearInterval(interval);
   }, [isLoading, fetchRaids]);
 
-  /* -- poll messages every 3s for real-time chat ------------------- */
+  /* -- poll messages every 2s for real-time chat ------------------- */
   const lastMsgIdRef = useRef(0);
-  // Track the highest message id we've seen
+  // Track the highest message id we've seen (only count real server IDs, not negative optimistic ones)
   useEffect(() => {
     if (messages.length > 0) {
-      const maxId = Math.max(...messages.map((m) => m.id));
+      const maxId = Math.max(...messages.filter((m) => m.id > 0).map((m) => m.id), 0);
       if (maxId > lastMsgIdRef.current) lastMsgIdRef.current = maxId;
     }
   }, [messages]);
 
+  // Keep a ref to the current community name so the poll effect doesn't depend on
+  // the communities array (which is replaced every 15s by market data updates).
+  const pollCommunityNameRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedCommunity === "all") {
+      pollCommunityNameRef.current = null;
+    } else {
+      const name = communities.find((c) => c.ticker === selectedCommunity)?.name ?? null;
+      if (name) pollCommunityNameRef.current = name;
+    }
+  }, [selectedCommunity, communities]);
+
   useEffect(() => {
     if (isLoading) return;
-    // Only poll when a specific community is selected
     if (selectedCommunity === "all") return;
-    const communityName = communities.find((c) => c.ticker === selectedCommunity)?.name;
-    if (!communityName) return;
 
     const poll = async () => {
+      const communityName = pollCommunityNameRef.current;
+      if (!communityName) return;
       try {
         const params = new URLSearchParams({ community: communityName });
         if (lastMsgIdRef.current > 0) params.set("after", String(lastMsgIdRef.current));
@@ -415,9 +445,10 @@ export function CommunityProvider({
         if (!res.ok) return;
         const fresh: ChatMessage[] = await res.json();
         if (!Array.isArray(fresh) || fresh.length === 0) return;
-        // Merge — only add messages we don't already have
+        // Merge — only add messages we don't already have.
+        // Optimistic messages use negative IDs so they never collide with server IDs.
         setMessages((prev) => {
-          const ids = new Set(prev.map((m) => m.id));
+          const ids = new Set(prev.filter((m) => m.id > 0).map((m) => m.id));
           const newMsgs = fresh.filter((m) => !ids.has(m.id));
           if (newMsgs.length === 0) return prev;
           return [...prev, ...newMsgs];
@@ -427,9 +458,131 @@ export function CommunityProvider({
       }
     };
 
-    const interval = setInterval(poll, 2000); // Poll every 2s for faster chat
+    const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [isLoading, selectedCommunity, communities]);
+  }, [isLoading, selectedCommunity]);
+
+  /* -- prioritize market polling by member count ------------------ */
+  const selectedMint = useMemo(() => {
+    if (selectedCommunity === "all") return null;
+    return communities.find((c) => c.ticker === selectedCommunity)?.mint ?? null;
+  }, [selectedCommunity, communities]);
+
+  const applyMarketData = useCallback((data: Record<string, Record<string, unknown>>) => {
+    setCommunities((prev) => {
+      let changed = false;
+      const next = prev.map((c) => {
+        const d = data[c.mint];
+        if (!d) return c;
+
+        const updated = {
+          ...c,
+          priceUsd: (d.priceUsd as number | null | undefined) ?? c.priceUsd,
+          priceChange24h: (d.priceChange24h as number | null | undefined) ?? c.priceChange24h,
+          volume24h: (d.volume24h as number | null | undefined) ?? c.volume24h,
+          liquidity: (d.liquidity as number | null | undefined) ?? c.liquidity,
+          fdv: (d.fdv as number | null | undefined) ?? c.fdv,
+          pairUrl: (d.pairUrl as string | null | undefined) ?? c.pairUrl,
+          txns24h: (d.txns24h as { buys: number; sells: number } | null | undefined) ?? c.txns24h,
+          tokenCreatedAt: (d.createdAt as number | null | undefined) ?? c.tokenCreatedAt,
+          image: (d.image as string | null | undefined) || c.image,
+          holders: (d.holders as number | null | undefined) ?? c.holders,
+        };
+
+        const isSame =
+          updated.priceUsd === c.priceUsd &&
+          updated.priceChange24h === c.priceChange24h &&
+          updated.volume24h === c.volume24h &&
+          updated.liquidity === c.liquidity &&
+          updated.fdv === c.fdv &&
+          updated.pairUrl === c.pairUrl &&
+          updated.tokenCreatedAt === c.tokenCreatedAt &&
+          updated.image === c.image &&
+          updated.holders === c.holders &&
+          updated.txns24h?.buys === c.txns24h?.buys &&
+          updated.txns24h?.sells === c.txns24h?.sells;
+
+        if (isSame) return c;
+        changed = true;
+        return updated;
+      });
+
+      return changed ? next : prev;
+    });
+  }, []);
+
+  const memberPriorityKey = useMemo(() => {
+    return communities
+      .filter((c) => !!c.mint)
+      .map((c) => `${c.ticker}:${c.mint}:${c.members}`)
+      .sort()
+      .join("|");
+  }, [communities]);
+
+  const { highPriorityMints, lowPriorityMints } = useMemo(() => {
+    const minted = communities
+      .filter((c) => !!c.mint)
+      .slice()
+      .sort((a, b) => (b.members ?? 0) - (a.members ?? 0));
+
+    const topByMembers = minted.slice(0, 20).map((c) => c.mint);
+    const highSet = new Set<string>(topByMembers);
+    if (selectedMint) highSet.add(selectedMint);
+
+    const high = Array.from(highSet);
+    const low = minted.map((c) => c.mint).filter((mint) => !highSet.has(mint));
+    return { highPriorityMints: high, lowPriorityMints: low };
+  }, [memberPriorityKey, selectedMint, communities]);
+
+  const highPriorityKey = useMemo(() => highPriorityMints.join(","), [highPriorityMints]);
+  const lowPriorityKey = useMemo(() => lowPriorityMints.join(","), [lowPriorityMints]);
+
+  const fetchMarketForMints = useCallback(async (mints: string[]) => {
+    if (mints.length === 0) return;
+    try {
+      const res = await fetch("/api/market", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mints }),
+      });
+      if (!res.ok) return;
+      const { data } = await res.json();
+      if (!data || typeof data !== "object") return;
+      applyMarketData(data as Record<string, Record<string, unknown>>);
+    } catch {
+      // non-critical
+    }
+  }, [applyMarketData]);
+
+  // Poll top communities (by members) frequently so active rooms get freshest metrics.
+  useEffect(() => {
+    const mints = highPriorityKey ? highPriorityKey.split(",") : [];
+    if (isLoading || mints.length === 0) return;
+    const tick = () => fetchMarketForMints(mints.slice(0, 30));
+    tick();
+    const interval = setInterval(tick, 15_000);
+    return () => clearInterval(interval);
+  }, [isLoading, highPriorityKey, fetchMarketForMints]);
+
+  // Poll the remaining communities in rotating batches at a lower frequency.
+  useEffect(() => {
+    const mints = lowPriorityKey ? lowPriorityKey.split(",") : [];
+    if (isLoading || mints.length === 0) return;
+    let chunkIndex = 0;
+
+    const tick = () => {
+      const chunkSize = 30;
+      const start = chunkIndex * chunkSize;
+      const batch = mints.slice(start, start + chunkSize);
+      if (batch.length > 0) fetchMarketForMints(batch);
+      const totalChunks = Math.ceil(mints.length / chunkSize);
+      chunkIndex = totalChunks > 0 ? (chunkIndex + 1) % totalChunks : 0;
+    };
+
+    tick();
+    const interval = setInterval(tick, 45_000);
+    return () => clearInterval(interval);
+  }, [isLoading, lowPriorityKey, fetchMarketForMints]);
 
   /* -- enrich communities with DexScreener market data ------------ */
   const marketEnrichmentDone = useRef(false);
@@ -604,14 +757,13 @@ export function CommunityProvider({
   /* -- send chat message ------------------------------------------ */
   const sendMessage = useCallback((msg: string) => {
     if (!msg.trim()) return;
-    // Must be signed in with X to chat
-    if (!isSignedIn) return;
+    // Anonymous chat is allowed — no sign-in required.
     // Require a specific community — no "general" bucket
     if (selectedCommunity === "all") return;
     const community = communities.find((c) => c.ticker === selectedCommunity)?.name;
     if (!community) return;
 
-    const optimisticId = nextMsgId;
+    const optimisticId = optimisticMsgIdRef.current--; // always negative, never collides with server IDs
     const newMsg: ChatMessage = {
       id: optimisticId,
       user: username,
@@ -620,7 +772,6 @@ export function CommunityProvider({
       community,
     };
     setMessages((prev) => [...prev, newMsg]);
-    setNextMsgId((prev) => prev + 1);
 
     // Persist to DB (with auth token), then replace optimistic id with server id
     (async () => {
@@ -635,12 +786,12 @@ export function CommunityProvider({
         });
         if (res.ok) {
           const saved: ChatMessage = await res.json();
-          // Replace the optimistic message with the server-assigned id
+          // Replace the optimistic message with the real server-assigned id
           setMessages((prev) => prev.map((m) => m.id === optimisticId ? { ...m, id: saved.id } : m));
           lastMsgIdRef.current = Math.max(lastMsgIdRef.current, saved.id);
         }
       } catch {
-        // send failed — optimistic message stays
+        // send failed — optimistic message stays until next poll overwrites it
       }
     })();
 
@@ -648,7 +799,7 @@ export function CommunityProvider({
       { user: username, action: "sent message in", target: community, time: "now" },
       ...prev.slice(0, 19),
     ]);
-  }, [isSignedIn, selectedCommunity, communities, nextMsgId, username, getAccessToken]);
+  }, [selectedCommunity, communities, username, getAccessToken]);
 
   /* -- engage raid ------------------------------------------------ */
   const engageRaid = useCallback((raidId: number, type: "like" | "retweet" | "reply") => {
@@ -1029,6 +1180,37 @@ export function CommunityProvider({
     return comm?.mint ?? null;
   }, [communities]);
 
+  /* -- community page data cache ---------------------------------- */
+  const communityDataCache = useRef<Map<string, CommunityPageData>>(new Map());
+
+  const getCommunityData = useCallback((ticker: string): CommunityPageData | null => {
+    return communityDataCache.current.get(ticker) ?? null;
+  }, []);
+
+  const fetchCommunityData = useCallback(async (ticker: string): Promise<CommunityPageData | null> => {
+    try {
+      const [commRes, membersRes, votesRes] = await Promise.all([
+        fetch(`/api/communities`),
+        fetch(`/api/communities/members?ticker=${encodeURIComponent(ticker)}`),
+        fetch(`/api/communities/vote?ticker=${encodeURIComponent(ticker)}`),
+      ]);
+      const allComms = commRes.ok ? await commRes.json() : [];
+      const comm = Array.isArray(allComms) ? allComms.find((c: { ticker: string }) => c.ticker === ticker) : null;
+      if (!comm) return null;
+      const membersList = membersRes.ok ? await membersRes.json() : [];
+      const votesData = votesRes.ok ? await votesRes.json() : [];
+      const data: CommunityPageData = {
+        community: comm,
+        members: Array.isArray(membersList) ? membersList : [],
+        votes: Array.isArray(votesData) ? votesData : (votesData?.votes ?? []),
+      };
+      communityDataCache.current.set(ticker, data);
+      return data;
+    } catch {
+      return null;
+    }
+  }, []);
+
   return (
     <CommunityContext.Provider
       value={{
@@ -1045,6 +1227,7 @@ export function CommunityProvider({
         searchQuery,
         joinedCommunities,
         username,
+        userProfileImage,
         isSignedIn,
         isLoading,
         selectCommunity,
@@ -1060,6 +1243,8 @@ export function CommunityProvider({
         syncTokenCommunities,
         joinCommunity,
         leaveCommunity,
+        getCommunityData,
+        fetchCommunityData,
       }}
     >
       {children}

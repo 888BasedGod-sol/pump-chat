@@ -179,34 +179,37 @@ export default function CommunityChat() {
 
       {/* Input */}
       <div className="border-t border-border p-2.5 bg-background/30">
-        {hasSelectedCommunity && isSignedIn ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={`message ${activeCommunity?.name ?? "community"}...`}
-              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none transition-colors"
-            />
-            <button
-              onClick={handleSend}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-background transition-colors hover:bg-accent-hover"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-              </svg>
-            </button>
+        {hasSelectedCommunity ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={`message ${activeCommunity?.name ?? "community"}...`}
+                className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none transition-colors"
+              />
+              <button
+                onClick={handleSend}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-background transition-colors hover:bg-accent-hover"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+              </button>
+            </div>
+            {!isSignedIn && (
+              <button
+                onClick={() => login()}
+                disabled={!ready}
+                className="flex w-full items-center justify-center gap-1.5 text-[10px] text-text-muted hover:text-accent transition-colors"
+              >
+                <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                chatting anonymously — sign in with X for a verified handle
+              </button>
+            )}
           </div>
-        ) : hasSelectedCommunity && !isSignedIn ? (
-          <button
-            onClick={() => login()}
-            disabled={!ready}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent/10 border border-accent/30 px-3 py-2.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
-          >
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            Sign in with X to chat
-          </button>
         ) : (
           <p className="text-center text-[10px] text-text-muted py-1">
             select a community to start chatting

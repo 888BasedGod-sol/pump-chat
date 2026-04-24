@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { messages } from "@/lib/schema";
 import { desc, eq, and, gt } from "drizzle-orm";
@@ -44,12 +45,12 @@ export async function GET(request: Request) {
   });
 }
 
-// POST — send a message (requires auth)
+// POST — send a message
+// Auth is optional: signed-in users (Privy) can post under their @handle.
+// Anonymous users may post but their `user` field MUST match the anon pattern
+// (e.g. "anon_ab12cd"), preventing impersonation of @handles.
 export async function POST(request: Request) {
   const verified = await verifyPrivyToken(request);
-  if (!verified) {
-    return NextResponse.json({ error: "Must be signed in" }, { status: 401 });
-  }
 
   const { allowed } = rateLimit(getClientKey(request), 20, 60_000);
   if (!allowed) {
@@ -63,6 +64,17 @@ export async function POST(request: Request) {
   }
   const { user, msg, community } = parsed.data;
 
+  // Anti-impersonation: unauthenticated posts must use an anon_* handle and
+  // cannot start with "@" (which is reserved for X-verified usernames).
+  if (!verified) {
+    if (!/^anon_[A-Za-z0-9]{4,16}$/.test(user)) {
+      return NextResponse.json(
+        { error: "Anonymous posts must use an anon_* handle" },
+        { status: 400 }
+      );
+    }
+  }
+
   const result = await db
     .insert(messages)
     .values({
@@ -74,13 +86,34 @@ export async function POST(request: Request) {
     .returning()
     .get();
 
-  return NextResponse.json({
+  const chatMessage = {
     id: result.id,
     user: result.user,
     msg: result.msg,
     community: result.community,
     time: "now",
-  });
+  };
+
+  // Broadcast to PartyKit room in the background (non-blocking)
+  const partyHost = process.env.NEXT_PUBLIC_PARTYKIT_HOST;
+  if (partyHost) {
+    after(async () => {
+      try {
+        const room = encodeURIComponent(community);
+        const protocol = partyHost.includes("localhost") ? "http" : "https";
+        await fetch(`${protocol}://${partyHost}/parties/chat/${room}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "new-message", message: chatMessage }),
+          signal: AbortSignal.timeout(3000),
+        });
+      } catch {
+        // PartyKit broadcast failed — clients will get it via fallback poll
+      }
+    });
+  }
+
+  return NextResponse.json(chatMessage);
 }
 
 function formatTime(ts: number): string {
